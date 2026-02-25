@@ -95,7 +95,7 @@ class JawWorm(Enemy):
 
 class RedLouse(Enemy):
     def __init__(self):
-        super().__init__('red_louse', '红虱', random.randint(8, 13))
+        super().__init__('red_louse', '红虱', random.randint(14, 20))
 
     def get_next_intent(self) -> EnemyIntent:
         r = random.random()
@@ -161,6 +161,71 @@ class SentryPair(Enemy):
         if turn % 3 == 0:
             return EnemyIntent('block', 0, 1, '射击（将眩晕加入弃牌堆）')
         return EnemyIntent('attack', 9, 1, '激光束 9')
+
+
+# ===== 第2幕普通敌人 =====
+class FungiBeast(Enemy):
+    """第2幕普通 - 菌兽（逐渐增强型）"""
+    def __init__(self):
+        super().__init__('fungi_beast', '菌兽', random.randint(55, 65))
+
+    def get_next_intent(self) -> EnemyIntent:
+        turn = len(self.move_history)
+        if turn % 4 == 0:
+            return EnemyIntent('buff', 2, 1, '孢子增强（力量+2）')
+        elif turn % 4 == 1:
+            dmg = 10 + self.strength
+            return EnemyIntent('attack', dmg, 1, f'孢子打击 {dmg}')
+        elif turn % 4 == 2:
+            dmg = 7 + self.strength
+            return EnemyIntent('attack', dmg, 2, f'爆裂孢 2×{dmg}')
+        return EnemyIntent('block', 8, 1, '孢子甲（格挡8）')
+
+
+class CopperGolem(Enemy):
+    """第2幕普通 - 铜傀儡（攻守交替型）"""
+    def __init__(self):
+        super().__init__('copper_golem', '铜傀儡', random.randint(62, 72))
+
+    def get_next_intent(self) -> EnemyIntent:
+        turn = len(self.move_history)
+        if turn % 3 == 0:
+            return EnemyIntent('attack', 13, 1, '铁拳 13')
+        elif turn % 3 == 1:
+            return EnemyIntent('block', 10, 1, '硬化（格挡10）')
+        return EnemyIntent('attack', 8, 2, '双击 2×8')
+
+
+# ===== 第3幕普通敌人 =====
+class VoidWalker(Enemy):
+    """第3幕普通 - 虚空行者（力量堆叠型）"""
+    def __init__(self):
+        super().__init__('void_walker', '虚空行者', random.randint(85, 98))
+
+    def get_next_intent(self) -> EnemyIntent:
+        if len(self.move_history) == 0:
+            return EnemyIntent('buff', 3, 1, '虚空汲取（力量+3）')
+        r = random.random()
+        if r < 0.55:
+            dmg = 15 + self.strength
+            return EnemyIntent('attack', dmg, 1, f'暗影打击 {dmg}')
+        return EnemyIntent('buff', 2, 1, '汲取（力量+2）')
+
+
+class DarkSentinel(Enemy):
+    """第3幕普通 - 暗影哨兵（重甲重击型）"""
+    def __init__(self):
+        super().__init__('dark_sentinel', '暗影哨兵', random.randint(95, 108))
+
+    def get_next_intent(self) -> EnemyIntent:
+        turn = len(self.move_history)
+        if turn % 4 == 0:
+            return EnemyIntent('block', 16, 1, '暗影护盾（格挡16）')
+        elif turn % 4 == 1:
+            return EnemyIntent('attack', 18, 1, '能量斩 18')
+        elif turn % 4 == 2:
+            return EnemyIntent('attack', 9, 2, '双重打击 2×9')
+        return EnemyIntent('buff', 2, 1, '强化（力量+2）')
 
 
 # ===== Boss =====
@@ -230,10 +295,10 @@ ENEMY_POOLS = {
     'act1_normal': [Cultist, JawWorm, RedLouse, Slime],
     'act1_elite': [GremlinNob, Lagavulin, SentryPair],
     'act1_boss': [TheGuardian],
-    'act2_normal': [Cultist, JawWorm, Slime, GremlinNob],
+    'act2_normal': [FungiBeast, CopperGolem],
     'act2_elite': [Lagavulin, SentryPair, GremlinNob],
     'act2_boss': [HexaGhost],
-    'act3_normal': [GremlinNob, SentryPair, Lagavulin],
+    'act3_normal': [VoidWalker, DarkSentinel],
     'act3_elite': [Lagavulin, SentryPair, GremlinNob],
     'act3_boss': [CorruptHeart],
 }

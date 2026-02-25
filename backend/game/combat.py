@@ -374,6 +374,41 @@ def _generate_next_intent(enemy: dict) -> dict:
             return {'action': 'attack', 'value': 7, 'times': 2, 'description': '吐酸 2x7'}
         return {'action': 'special', 'value': 0, 'times': 1, 'description': '腐蚀 虚弱2回合'}
 
+    # 第2幕敌人
+    elif 'fungi_beast' in eid:
+        patterns = [
+            {'action': 'buff', 'value': 2, 'times': 1, 'description': '孢子增强 力量+2'},
+            {'action': 'attack', 'value': 10 + enemy.get('strength', 0), 'times': 1,
+             'description': f'孢子打击 {10 + enemy.get("strength", 0)}'},
+            {'action': 'attack', 'value': 7 + enemy.get('strength', 0), 'times': 2,
+             'description': f'爆裂孢 2×{7 + enemy.get("strength", 0)}'},
+            {'action': 'block', 'value': 8, 'times': 1, 'description': '孢子甲 格挡8'},
+        ]
+        return patterns[move_count % len(patterns)]
+    elif 'copper_golem' in eid:
+        patterns = [
+            {'action': 'attack', 'value': 13, 'times': 1, 'description': '铁拳 13'},
+            {'action': 'block', 'value': 10, 'times': 1, 'description': '硬化 格挡10'},
+            {'action': 'attack', 'value': 8, 'times': 2, 'description': '双击 2×8'},
+        ]
+        return patterns[move_count % len(patterns)]
+
+    # 第3幕敌人
+    elif 'void_walker' in eid:
+        r = random.random()
+        if r < 0.55:
+            v = 15 + enemy.get('strength', 0)
+            return {'action': 'attack', 'value': v, 'times': 1, 'description': f'暗影打击 {v}'}
+        return {'action': 'buff', 'value': 2, 'times': 1, 'description': '汲取 力量+2'}
+    elif 'dark_sentinel' in eid:
+        patterns = [
+            {'action': 'block', 'value': 16, 'times': 1, 'description': '暗影护盾 格挡16'},
+            {'action': 'attack', 'value': 18, 'times': 1, 'description': '能量斩 18'},
+            {'action': 'attack', 'value': 9, 'times': 2, 'description': '双重打击 2×9'},
+            {'action': 'buff', 'value': 2, 'times': 1, 'description': '强化 力量+2'},
+        ]
+        return patterns[move_count % len(patterns)]
+
     # 默认
     v = random.randint(6, 12)
     return {'action': 'attack', 'value': v, 'times': 1, 'description': f'攻击 {v}'}
