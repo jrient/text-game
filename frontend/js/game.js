@@ -12,6 +12,25 @@ const Game = {
   // ===== 初始化 =====
   async init() {
     await this.loadCharacters();
+
+    // 尝试恢复上次游戏进度
+    const savedId = localStorage.getItem('roguelike_game_id');
+    if (savedId) {
+      try {
+        this.gameId = savedId;
+        const state = await API.getState(savedId);
+        if (state && state.phase && state.phase !== 'game_over' && state.phase !== 'victory') {
+          UI.notify('已恢复上次游戏进度', 'success', 2500);
+          this.applyState(state);
+          return;
+        }
+      } catch (e) {
+        // 游戏不存在或已结束，清除保存
+      }
+      localStorage.removeItem('roguelike_game_id');
+      this.gameId = null;
+    }
+
     UI.showScreen('menu');
   },
 
@@ -54,6 +73,7 @@ const Game = {
     this.gameId = null;
     this.state = null;
     this.selectedCharacter = null;
+    localStorage.removeItem('roguelike_game_id');
     UI.showScreen('menu');
   },
 
@@ -119,6 +139,7 @@ const Game = {
     try {
       const data = await API.newGame(this.selectedCharacter.id, name, ascension);
       this.gameId = data.game_id;
+      localStorage.setItem('roguelike_game_id', this.gameId);
       UI.notify(`游戏开始！欢迎，${name}！`, 'success', 2000);
       await this.refreshState();
     } catch (e) {
