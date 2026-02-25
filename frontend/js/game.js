@@ -28,12 +28,21 @@ const Game = {
     const list = document.getElementById('character-list');
     list.innerHTML = '';
     characters.forEach(char => {
+      const atkStr = char.char_attack_bonus > 0 ? `+${char.char_attack_bonus}` : `${char.char_attack_bonus}`;
+      const defStr = char.char_defense_bonus > 0 ? `+${char.char_defense_bonus}` : `${char.char_defense_bonus}`;
+      const atkColor = char.char_attack_bonus >= 0 ? '#e74c3c' : '#888';
+      const defColor = char.char_defense_bonus >= 0 ? '#3498db' : '#888';
       const card = document.createElement('div');
       card.className = 'character-card';
       card.innerHTML = `
         <div class="char-icon">${char.icon}</div>
         <div class="char-name">${char.name}</div>
-        <div class="char-hp">❤️ ${char.max_hp} HP</div>
+        <div class="char-stats-mini">
+          <span>❤️ ${char.max_hp}</span>
+          <span>⚡ ${char.max_energy}</span>
+          <span style="color:${atkColor}">⚔️ ${atkStr}</span>
+          <span style="color:${defColor}">🛡️ ${defStr}</span>
+        </div>
       `;
       card.addEventListener('click', () => this.selectCharacter(char, card));
       list.appendChild(card);
@@ -70,12 +79,23 @@ const Game = {
     document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
     cardEl.classList.add('selected');
 
+    const atkBonus = char.char_attack_bonus;
+    const defBonus = char.char_defense_bonus;
+    const atkStr = atkBonus > 0 ? `<span style="color:#e74c3c">+${atkBonus}</span>` : atkBonus < 0 ? `<span style="color:#888">${atkBonus}</span>` : `<span style="color:#aaa">0</span>`;
+    const defStr = defBonus > 0 ? `<span style="color:#3498db">+${defBonus}</span>` : defBonus < 0 ? `<span style="color:#888">${defBonus}</span>` : `<span style="color:#aaa">0</span>`;
+    const passiveRow = char.base_block > 0
+      ? `<div class="char-detail-row"><span>🛡️ 被动护甲</span><span style="color:#3498db">每回合 +${char.base_block}</span></div>`
+      : '';
     document.getElementById('character-detail').innerHTML = `
-      <div style="text-align:center">
-        <div style="font-size:48px">${char.icon}</div>
-        <div style="font-size:18px;font-weight:bold;margin:8px 0">${char.name}</div>
-        <div style="color:var(--text-secondary)">${char.description}</div>
-        <div style="margin-top:8px;color:#27ae60">❤️ ${char.max_hp} 初始HP</div>
+      <div class="char-detail-panel">
+        <div style="font-size:44px;text-align:center">${char.icon}</div>
+        <div style="font-size:18px;font-weight:bold;text-align:center;margin:6px 0">${char.name}</div>
+        <div style="color:var(--text-secondary);font-size:12px;text-align:center;margin-bottom:12px">${char.description}</div>
+        <div class="char-detail-row"><span>❤️ 生命值</span><span style="color:#27ae60">${char.max_hp}</span></div>
+        <div class="char-detail-row"><span>⚡ 能量上限</span><span style="color:#f39c12">${char.max_energy}</span></div>
+        <div class="char-detail-row"><span>⚔️ 攻击加成/hit</span>${atkStr}</div>
+        <div class="char-detail-row"><span>🛡️ 格挡加成/次</span>${defStr}</div>
+        ${passiveRow}
       </div>
     `;
 

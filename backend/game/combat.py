@@ -114,9 +114,11 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
 
 
 def calculate_damage(base_dmg: int, hits: int, player: dict, enemy: dict) -> int:
-    """计算实际伤害（含力量、虚弱、易伤等修正）"""
+    """计算实际伤害（含力量、职业攻击加成、虚弱、易伤等修正）"""
     strength = player.get('strength', 0)
-    total = (base_dmg + strength) * hits
+    char_attack = player.get('char_attack_bonus', 0)
+    per_hit = max(0, base_dmg + strength + char_attack)
+    total = per_hit * hits
 
     # 虚弱减伤25%
     if player.get('weak_turns', 0) > 0:
@@ -130,9 +132,10 @@ def calculate_damage(base_dmg: int, hits: int, player: dict, enemy: dict) -> int
 
 
 def calculate_block(base_block: int, player: dict) -> int:
-    """计算实际格挡（含敏捷修正）"""
+    """计算实际格挡（含敏捷、职业防御加成修正）"""
     dexterity = player.get('dexterity', 0)
-    block = base_block + dexterity
+    char_defense = player.get('char_defense_bonus', 0)
+    block = base_block + dexterity + char_defense
 
     # 虚弱减少格挡25%
     if player.get('weak_turns', 0) > 0:
@@ -165,24 +168,17 @@ def deal_damage(damage: int, hits: int, enemy: dict, logs: List[str]) -> Tuple[i
 
 
 def deal_damage_to_player(damage: int, player: dict, logs: List[str]) -> Tuple[dict, int]:
-    """对玩家造成伤害，返回 (player, actual_damage_taken)"""
+    """对玩家造成伤害，格挡作为护甲减免伤害（不消耗）"""
     block = player.get('block', 0)
-    actual_dmg = 0
-    if block > 0:
-        if damage >= block:
-            dmg_through = damage - block
-            player['block'] = 0
-            player['hp'] -= dmg_through
-            actual_dmg = dmg_through
-            if dmg_through > 0:
-                logs.append(f"你受到 {dmg_through} 点伤害（格挡吸收了部分）")
+    actual_dmg = max(0, damage - block)
+    if actual_dmg > 0:
+        player['hp'] -= actual_dmg
+        if block > 0:
+            logs.append(f"护甲减免 {damage - actual_dmg} 点，你受到 {actual_dmg} 点伤害")
         else:
-            player['block'] -= damage
-            logs.append(f"格挡完全吸收了 {damage} 点伤害")
+            logs.append(f"你受到 {actual_dmg} 点伤害")
     else:
-        player['hp'] -= damage
-        actual_dmg = damage
-        logs.append(f"你受到 {damage} 点伤害")
+        logs.append(f"护甲完全抵消了 {damage} 点伤害")
 
     player['hp'] = max(0, player['hp'])
     return player, actual_dmg
@@ -406,6 +402,12 @@ def start_player_turn(player: dict, enemies: List[dict] = None) -> Tuple[dict, L
 
     # 恢复能量（含卡尺保留格挡逻辑已在end_turn处理）
     player['energy'] = player.get('max_energy', 3) + saved_energy
+
+    # 战士被动护甲：每回合开始自动叠加
+    base_block = player.get('base_block', 0)
+    if base_block > 0:
+        player['block'] = player.get('block', 0) + base_block
+        logs.append(f"🛡️ 战士护甲：获得 {base_block} 点格挡（当前格挡 {player['block']}）")
 
     # 抽5张牌
     hand_size = 5 + player.get('bonus_draw', 0)

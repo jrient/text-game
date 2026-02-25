@@ -10,12 +10,27 @@ from .enemies import create_enemy
 
 
 CHARACTER_STATS = {
-    'warrior': {'max_hp': 80, 'gold': 99, 'name': '战士', 'icon': '⚔️',
-                'description': '强壮的战士，擅长力量与防御，高HP'},
-    'mage': {'max_hp': 75, 'gold': 99, 'name': '法师', 'icon': '🔮',
-             'description': '神秘的法师，擅长能量控制和魔法'},
-    'assassin': {'max_hp': 70, 'gold': 99, 'name': '刺客', 'icon': '🗡️',
-                 'description': '敏捷的刺客，擅长毒素和连续攻击'},
+    'warrior': {
+        'max_hp': 95, 'gold': 99, 'name': '战士', 'icon': '⚔️',
+        'description': '铁壁战士，HP最高，防御极强，每回合获得5点被动护甲，攻击偏弱',
+        'max_energy': 3, 'base_block': 5,
+        'char_attack_bonus': -1,   # 攻击卡每次命中 -1 伤害
+        'char_defense_bonus': 4,   # 格挡卡每次使用 +4 格挡
+    },
+    'mage': {
+        'max_hp': 52, 'gold': 99, 'name': '法师', 'icon': '🔮',
+        'description': '能量法师，HP最低，4点能量，攻击法术威力极强，防御薄弱',
+        'max_energy': 4, 'base_block': 0,
+        'char_attack_bonus': 3,    # 攻击卡每次命中 +3 伤害
+        'char_defense_bonus': -1,  # 格挡卡每次使用 -1 格挡
+    },
+    'assassin': {
+        'max_hp': 70, 'gold': 99, 'name': '刺客', 'icon': '🗡️',
+        'description': '暗影刺客，攻击力强，擅长连击爆发，防御一般',
+        'max_energy': 3, 'base_block': 0,
+        'char_attack_bonus': 2,    # 攻击卡每次命中 +2 伤害
+        'char_defense_bonus': 0,   # 格挡无加成
+    },
 }
 
 # 天赋难度说明
@@ -62,8 +77,11 @@ def create_new_game(character: str, player_name: str = 'Hero', ascension: int = 
         # 战斗属性
         'strength': 0,
         'dexterity': 0,
-        'energy': 3,
-        'max_energy': 3,
+        'energy': stats.get('max_energy', 3),
+        'max_energy': stats.get('max_energy', 3),
+        'base_block': stats.get('base_block', 0),
+        'char_attack_bonus': stats.get('char_attack_bonus', 0),   # 职业攻击修正（每次命中）
+        'char_defense_bonus': stats.get('char_defense_bonus', 0), # 职业防御修正（每次格挡）
 
         # 状态效果（非战斗时为0）
         'block': 0,

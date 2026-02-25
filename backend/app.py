@@ -40,6 +40,10 @@ def get_characters():
             'icon': stats['icon'],
             'description': stats['description'],
             'max_hp': stats['max_hp'],
+            'max_energy': stats.get('max_energy', 3),
+            'base_block': stats.get('base_block', 0),
+            'char_attack_bonus': stats.get('char_attack_bonus', 0),
+            'char_defense_bonus': stats.get('char_defense_bonus', 0),
         })
     return jsonify({'characters': chars})
 

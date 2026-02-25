@@ -22,3 +22,6 @@ logs/
 # 系统
 .DS_Store
 Thumbs.db
+
+# OMC 会话状态（不提交）
+.omc/
