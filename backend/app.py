@@ -148,6 +148,8 @@ def select_node():
         state['shop'] = get_shop_inventory(state)
         state['phase'] = 'shop'
         state['message'] = '🛒 欢迎光临！有什么需要的吗？'
+        # 大颌银行：进入商店后停止收益
+        state['player']['_maw_bank_spent'] = True
 
     elif node_type == 'event':
         from game.events import get_random_event
@@ -350,6 +352,9 @@ def pick_card():
     if not state:
         return jsonify({'error': '游戏不存在'}), 404
 
+    player = state['player']
+    relic_ids = {r['id'] for r in player.get('relics', [])}
+
     if not skip and card_id:
         from game.cards import ALL_CARDS
         card_data = None
@@ -358,9 +363,19 @@ def pick_card():
                 card_data = reward
                 break
         if card_data:
-            state['player']['deck'].append(card_data)
-            state['player']['discard_pile'].append(card_data)
+            player['deck'].append(card_data)
+            player['discard_pile'].append(card_data)
+            # 陶瓷鱼：选牌时+9金币
+            if 'ceramic_fish' in relic_ids:
+                player['gold'] = player.get('gold', 0) + 9
+                player['gold_earned'] = player.get('gold_earned', 0) + 9
+    else:
+        # 鸣碗：跳过选牌时+2最大HP
+        if skip and 'singing_bowl' in relic_ids:
+            player['max_hp'] = player.get('max_hp', 50) + 2
+            player['hp'] = min(player['hp'], player['max_hp'])
 
+    state['player'] = player
     state['card_rewards'] = None
     state['phase'] = 'map'
     state['message'] = '🗺️ 选择下一个目的地...'

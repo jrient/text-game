@@ -247,6 +247,11 @@ def end_combat_victory(game_state: Dict) -> Dict:
     if ascension >= 3:
         base_gold = int(base_gold * 0.9)
 
+    # 大颌银行：每场战斗额外+12金币，直到第一次访问商店
+    relic_ids = {r['id'] for r in player.get('relics', [])}
+    if 'maw_bank' in relic_ids and not player.get('_maw_bank_spent', False):
+        base_gold += 12
+
     player['gold'] += base_gold
     player['gold_earned'] = player.get('gold_earned', 0) + base_gold
 
@@ -281,10 +286,12 @@ def end_combat_victory(game_state: Dict) -> Dict:
         if relic:
             player['relics'].append(relic)
             game_state['message'] = f'💀 精英战胜利！获得遗物: {relic["name"]}'
-        game_state['card_rewards'] = get_card_rewards(player['character'], player['floor'])
+        reward_count = 4 if any(r.get('id') == 'question_card' for r in player.get('relics', [])) else 3
+        game_state['card_rewards'] = get_card_rewards(player['character'], player['floor'], reward_count)
         game_state['phase'] = 'card_reward'
     else:
-        game_state['card_rewards'] = get_card_rewards(player['character'], player['floor'])
+        reward_count = 4 if any(r.get('id') == 'question_card' for r in player.get('relics', [])) else 3
+        game_state['card_rewards'] = get_card_rewards(player['character'], player['floor'], reward_count)
         game_state['phase'] = 'card_reward'
         game_state['message'] = f'⚔️ 战斗胜利！获得 {base_gold} 金币。选择一张奖励卡牌...'
 

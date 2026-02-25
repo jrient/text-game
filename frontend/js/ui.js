@@ -128,6 +128,7 @@ const UI = {
 
     enemies.forEach((enemy, idx) => {
       const el = document.createElement('div');
+      el.id = `enemy-card-${idx}`;
       el.className = `enemy-card${enemy.is_boss ? ' boss' : ''}${enemy.hp <= 0 ? ' dead' : ''}`;
       if (idx === selectedEnemy && enemy.hp > 0) el.classList.add('targeted');
 
@@ -556,6 +557,18 @@ const UI = {
       <div class="stat-row"><span class="stat-label">牌组大小</span><span class="stat-value">${deckSize}</span></div>
     `;
   },
+  // ===== 伤害闪烁动画 =====
+  flashElement(id, type = 'damage') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cls = type === 'heal' ? 'flash-heal' : 'flash-damage';
+    el.classList.remove(cls);
+    // Force reflow to restart animation
+    void el.offsetWidth;
+    el.classList.add(cls);
+    el.addEventListener('animationend', () => el.classList.remove(cls), { once: true });
+  },
+
   // ===== 卡牌 Tooltip =====
   _showCardTooltip(card, e) {
     const tip = document.getElementById('card-tooltip');

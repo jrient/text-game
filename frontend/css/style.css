@@ -1086,6 +1086,23 @@ body {
 .enemy-card.boss { animation: bossGlow 2.2s infinite; }
 .damage-flash { animation: pulse 0.3s ease; }
 
+@keyframes flashRed {
+  0%   { background-color: inherit; }
+  20%  { background-color: rgba(200, 40, 40, 0.55); }
+  100% { background-color: inherit; }
+}
+@keyframes flashGreen {
+  0%   { background-color: inherit; }
+  20%  { background-color: rgba(40, 180, 80, 0.45); }
+  100% { background-color: inherit; }
+}
+.flash-damage {
+  animation: flashRed 0.4s ease-out forwards;
+}
+.flash-heal {
+  animation: flashGreen 0.4s ease-out forwards;
+}
+
 /* 胜利粒子 */
 .victory-particles {
   position: fixed;

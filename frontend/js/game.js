@@ -259,6 +259,10 @@ const Game = {
 
     try {
       const state = await API.playCard(this.gameId, cardIndex, targetIndex);
+      // Flash enemy on damage
+      if (state.log && state.log.some(l => l.includes('伤害') && !l.includes('你受到'))) {
+        UI.flashElement(`enemy-card-${targetIndex}`, 'damage');
+      }
       this.applyState(state);
       if (state.log) UI.appendLog(state.log);
 
@@ -281,6 +285,10 @@ const Game = {
 
     try {
       const state = await API.endTurn(this.gameId);
+      // Flash player HP bar when taking damage from enemies
+      if (state.log && state.log.some(l => l.includes('你受到'))) {
+        UI.flashElement('header-hp', 'damage');
+      }
       this.applyState(state);
       if (state.log) UI.appendLog(state.log);
 

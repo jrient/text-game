@@ -35,7 +35,26 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
 
     # ---- 攻击效果 ----
     if card.get('damage', 0) > 0 and not card.get('apply_to_all'):
-        if target_enemy:
+        card_id = card.get('id', '')
+        # 冲撞：本回合只打出过攻击牌时才生效
+        if card_id == 'w_clash':
+            if player.get('_attacks_this_turn', 0) != player.get('_cards_this_turn', 0):
+                logs.append('❌ 冲撞：本回合打出了非攻击牌，无效！')
+            elif target_enemy:
+                dmg = calculate_damage(card['damage'], card.get('hits', 1), player, target_enemy)
+                actual_dmg, target_enemy = deal_damage(dmg, card.get('hits', 1), target_enemy, logs)
+                player['damage_dealt'] = player.get('damage_dealt', 0) + actual_dmg
+                logs.append(f"对 {target_enemy['name']} 造成 {actual_dmg} 点伤害")
+        # 终幕：抽牌堆为空时才造成伤害
+        elif card_id == 'a_grand_finale':
+            if len(player.get('draw_pile', [])) > 0:
+                logs.append('❌ 终幕：抽牌堆不为空，无效！')
+            elif target_enemy:
+                dmg = calculate_damage(card['damage'], 1, player, target_enemy)
+                actual_dmg, target_enemy = deal_damage(dmg, 1, target_enemy, logs)
+                player['damage_dealt'] = player.get('damage_dealt', 0) + actual_dmg
+                logs.append(f"终幕：造成 {actual_dmg} 点伤害！")
+        elif target_enemy:
             dmg = calculate_damage(card['damage'], card.get('hits', 1), player, target_enemy)
             actual_dmg, target_enemy = deal_damage(dmg, card.get('hits', 1), target_enemy, logs)
             player['damage_dealt'] = player.get('damage_dealt', 0) + actual_dmg
@@ -103,6 +122,29 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
         if card.get('dexterity_gain', 0) > 0:
             player['dexterity'] = player.get('dexterity', 0) + card['dexterity_gain']
             logs.append(f"永久敏捷 +{card['dexterity_gain']}")
+
+    # ---- 特殊卡牌：打出后副作用 ----
+    card_id_post = card.get('id', '')
+    # 愤怒：将自身副本加入弃牌堆
+    if card_id_post == 'w_anger':
+        import copy
+        anger_copy = dict(card)
+        player.setdefault('discard_pile', []).append(anger_copy)
+        logs.append('愤怒：将一张愤怒加入弃牌堆')
+    # 狂野打击：将创伤加入弃牌堆
+    elif card_id_post == 'w_wild_strike':
+        from .cards import ALL_CARDS
+        wound = dict(ALL_CARDS['curse_wound'].to_dict())
+        player.setdefault('discard_pile', []).append(wound)
+        logs.append('狂野打击：创伤加入弃牌堆')
+    # 全力一击：将弃牌堆中所有0费牌拿回手牌
+    elif card_id_post == 'm_all_for_one':
+        zero_cards = [c for c in player.get('discard_pile', []) if c.get('cost', -1) == 0]
+        for zc in zero_cards:
+            player['discard_pile'].remove(zc)
+            player.setdefault('hand', []).append(zc)
+        if zero_cards:
+            logs.append(f'全力一击：{len(zero_cards)}张0费牌回到手牌')
 
     # 处理exhaust
     if card.get('exhaust'):
