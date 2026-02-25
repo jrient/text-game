@@ -543,9 +543,12 @@ document.addEventListener('keydown', (e) => {
   // Tab切换目标
   if (e.key === 'Tab') {
     e.preventDefault();
-    const enemies = (Game.state.combat?.enemies || []).filter(en => en.hp > 0);
-    if (enemies.length > 1) {
-      Game.selectedEnemy = (Game.selectedEnemy + 1) % enemies.length;
+    const allEnemies = Game.state.combat?.enemies || [];
+    const aliveIndices = allEnemies.map((en, i) => en.hp > 0 ? i : -1).filter(i => i >= 0);
+    if (aliveIndices.length > 1) {
+      const currentPos = aliveIndices.indexOf(Game.selectedEnemy);
+      const nextPos = (currentPos + 1) % aliveIndices.length;
+      Game.selectedEnemy = aliveIndices[nextPos];
       document.querySelectorAll('.enemy-card').forEach((el, i) => {
         el.classList.toggle('targeted', i === Game.selectedEnemy);
       });
