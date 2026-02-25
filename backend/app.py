@@ -207,8 +207,9 @@ def play_card():
     if card.get('unplayable'):
         return jsonify({'error': '此牌无法打出'}), 400
 
-    # 过滤存活敌人
-    alive_enemies = [e for e in enemies if e.get('hp', 0) > 0]
+    # 过滤存活敌人（记录原始索引，避免同类型敌人更新错乱）
+    alive_indices = [i for i, e in enumerate(enemies) if e.get('hp', 0) > 0]
+    alive_enemies = [enemies[i] for i in alive_indices]
     if not alive_enemies:
         return jsonify({'error': '没有存活的敌人'}), 400
 
@@ -231,12 +232,9 @@ def play_card():
 
     player['hand'] = hand
 
-    # 更新敌人列表（保留死亡敌人以显示）
-    for enemy in alive_enemies:
-        for i, orig_enemy in enumerate(enemies):
-            if orig_enemy['id'] == enemy['id'] or orig_enemy['name'] == enemy['name']:
-                enemies[i] = enemy
-                break
+    # 按原始索引回写更新后的存活敌人（保留死亡敌人以显示）
+    for j, orig_idx in enumerate(alive_indices):
+        enemies[orig_idx] = alive_enemies[j]
 
     combat['log'] = logs
     combat['enemies'] = enemies
@@ -288,7 +286,9 @@ def end_turn():
     player = state['player']
     combat = state['combat']
     enemies = combat['enemies']
-    alive_enemies = [e for e in enemies if e.get('hp', 0) > 0]
+    # 记录原始索引，避免同类型敌人更新错乱
+    alive_indices = [i for i, e in enumerate(enemies) if e.get('hp', 0) > 0]
+    alive_enemies = [enemies[i] for i in alive_indices]
 
     from game.combat import end_player_turn, start_player_turn, check_combat_end
 
@@ -298,12 +298,9 @@ def end_turn():
     # 检查死亡
     result = check_combat_end(player, alive_enemies)
 
-    # 更新敌人列表
-    for ae in alive_enemies:
-        for i, e in enumerate(enemies):
-            if e['name'] == ae['name']:
-                enemies[i] = ae
-                break
+    # 按原始索引回写（保留死亡敌人供显示）
+    for j, orig_idx in enumerate(alive_indices):
+        enemies[orig_idx] = alive_enemies[j]
 
     if result == 'defeat':
         state['phase'] = 'game_over'
