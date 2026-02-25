@@ -38,9 +38,10 @@ const UI = {
 
     // 遗物
     const relicsEl = document.getElementById('header-relics');
-    relicsEl.innerHTML = (player.relics || []).map(r =>
-      `<div class="relic-icon" title="${r.name}: ${r.description}">${r.name}</div>`
-    ).join('');
+    relicsEl.innerHTML = (player.relics || []).map(r => {
+      const short = r.name.length > 4 ? r.name.slice(0, 4) + '…' : r.name;
+      return `<div class="relic-icon" title="${r.name}: ${r.description}">${short}</div>`;
+    }).join('');
   },
 
   // ===== 地图渲染 =====

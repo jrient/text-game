@@ -384,6 +384,10 @@ body {
   min-height: 26px;
   display: flex;
   align-items: center;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ===== 地图 ===== */
@@ -395,7 +399,6 @@ body {
 }
 .map-title {
   text-align: center;
-  font-size: 16px;
   color: var(--text-secondary);
   margin-bottom: 14px;
   letter-spacing: 2px;
@@ -515,9 +518,6 @@ body {
   width: 56px;
   height: 56px;
   text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-  color: var(--accent-gold);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -668,7 +668,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 8px 6px;
-  overflow: hidden;
+  overflow: visible;
   flex-shrink: 0;
 }
 .hand-cards {
@@ -676,6 +676,7 @@ body {
   gap: 6px;
   align-items: flex-end;
   overflow-x: auto;
+  overflow-y: visible;
   padding-bottom: 4px;
   padding-left: 4px;
   padding-right: 4px;
@@ -941,7 +942,7 @@ body {
 .stat-row {
   display: flex;
   justify-content: space-between;
-  gap: 36px;
+  gap: 8px;
   padding: 7px 0;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
@@ -1004,6 +1005,10 @@ body {
   box-shadow: 0 4px 20px rgba(0,0,0,0.7);
   font-size: 14px;
 }
+.notification-success { border-color: #2a8c50 !important; }
+.notification-success::before { content: ''; display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #2a8c50; border-radius: 8px 0 0 8px; }
+.notification-error { border-color: #8a1818 !important; }
+.notification-warning { border-color: #8a6010 !important; }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateX(-50%) translateY(12px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -1238,6 +1243,20 @@ body {
   .lb-stat { min-width: 70px; padding: 8px 12px; }
   .lb-stat strong { font-size: 18px; }
   .lb-table { font-size: 12px; }
+
+  .btn-danger {
+    min-height: 48px;
+    font-size: 15px;
+    padding: 12px 18px;
+  }
+
+  /* 排行榜移动端只显示关键列 */
+  .lb-table th:nth-child(4),
+  .lb-table td:nth-child(4),
+  .lb-table th:nth-child(6),
+  .lb-table td:nth-child(6) {
+    display: none;
+  }
 }
 
 /* ===== 平板/小桌面 768px ===== */
