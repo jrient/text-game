@@ -525,8 +525,15 @@ body {
   flex-shrink: 0;
   box-shadow: 0 0 10px rgba(212,149,15,0.3), inset 0 0 15px rgba(0,0,0,0.5);
 }
-.energy-display > span:first-child { line-height: 1; }
-.energy-display > span:last-of-type { display: none; }
+.energy-nums {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--accent-gold);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
 .energy-label { font-size: 9px; color: var(--text-dim); line-height: 1; }
 
 .combat-actions {
