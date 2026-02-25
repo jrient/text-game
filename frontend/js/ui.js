@@ -129,35 +129,40 @@ const UI = {
     enemies.forEach((enemy, idx) => {
       const el = document.createElement('div');
       el.id = `enemy-card-${idx}`;
-      el.className = `enemy-card${enemy.is_boss ? ' boss' : ''}${enemy.hp <= 0 ? ' dead' : ''}`;
+      el.className = `enemy-card${enemy.is_boss ? ' boss' : enemy.is_elite ? ' elite' : ''}${enemy.hp <= 0 ? ' dead' : ''}`;
       if (idx === selectedEnemy && enemy.hp > 0) el.classList.add('targeted');
 
       const hpPct = Math.max(0, (enemy.hp / enemy.max_hp) * 100);
+      const portrait = _enemyPortrait(enemy.id || '');
+      const typeLabel = enemy.is_boss ? 'BOSS' : enemy.is_elite ? 'ELITE' : 'NORMAL';
+
+      const intentClass = enemy.intent ? `intent-${enemy.intent.action || 'attack'}` : '';
       const intentHtml = enemy.intent ? `
-        <div class="enemy-intent">
-          <div class="intent-label">${_intentIcon(enemy.intent.action)} 意图</div>
-          <div>${enemy.intent.description || '??'}</div>
+        <div class="enemy-intent ${intentClass}">
+          <div class="intent-label">${_intentIcon(enemy.intent.action)} ${enemy.intent.description || '??'}</div>
         </div>
       ` : '';
 
       const effectsHtml = [
         enemy.poison > 0 ? `<span class="enemy-poison">☠️ 毒${enemy.poison}</span>` : '',
-        enemy.strength > 0 ? `<span class="status-badge strength">💪 力${enemy.strength}</span>` : '',
+        enemy.strength > 0 ? `<span class="status-badge strength">💪 ${enemy.strength}</span>` : '',
         enemy.weak_turns > 0 ? `<span class="status-badge weak">💔 弱${enemy.weak_turns}</span>` : '',
-        enemy.vulnerable_turns > 0 ? `<span class="status-badge vulnerable">⬇️ 伤${enemy.vulnerable_turns}</span>` : '',
+        enemy.vulnerable_turns > 0 ? `<span class="status-badge vulnerable">⬇️ 易${enemy.vulnerable_turns}</span>` : '',
       ].filter(Boolean).join('');
 
-      const typeLabel = enemy.is_boss ? '【Boss】' : enemy.is_elite ? '【精英】' : '普通';
       el.innerHTML = `
-        <div class="enemy-type">${typeLabel}</div>
+        <div class="enemy-card-header">
+          <span class="enemy-type-badge">${typeLabel}</span>
+          ${enemy.block > 0 ? `<span style="font-size:10px;color:#60a0d8">🛡️${enemy.block}</span>` : ''}
+        </div>
+        <div class="enemy-portrait">${portrait}</div>
         <div class="enemy-name">${enemy.name}</div>
-        <div class="enemy-hp-bar">
+        <div class="enemy-hp-section">
           <div class="enemy-hp-text">❤️ ${enemy.hp}/${enemy.max_hp}</div>
           <div class="hp-bar">
             <div class="hp-fill${hpPct <= 30 ? ' low' : hpPct <= 60 ? ' mid' : ''}" style="width:${hpPct}%"></div>
           </div>
         </div>
-        ${enemy.block > 0 ? `<div class="enemy-block">🛡️ 格挡: ${enemy.block}</div>` : ''}
         ${effectsHtml ? `<div class="enemy-effects">${effectsHtml}</div>` : ''}
         ${intentHtml}
       `;
@@ -227,41 +232,65 @@ const UI = {
     if (card.upgraded) el.classList.add('upgraded');
     if (card.rarity) el.classList.add(`rarity-${card.rarity}`);
 
-    // Hover tooltip
-    el.addEventListener('mouseenter', (e) => UI._showCardTooltip(card, e));
-    el.addEventListener('mousemove', (e) => UI._moveCardTooltip(e));
-    el.addEventListener('mouseleave', () => UI._hideCardTooltip());
+    // 桌面端：hover 显示 tooltip；移动端：长按 500ms 显示
+    const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
+    el.addEventListener('mouseenter', (e) => { if (!isTouchDevice()) UI._showCardTooltip(card, e); });
+    el.addEventListener('mousemove', (e) => { if (!isTouchDevice()) UI._moveCardTooltip(e); });
+    el.addEventListener('mouseleave', () => { if (!isTouchDevice()) UI._hideCardTooltip(); });
+
+    let _longPressTimer = null;
+    el.addEventListener('touchstart', (e) => {
+      _longPressTimer = setTimeout(() => {
+        UI._showCardTooltipTouch(card, e.touches[0]);
+        _longPressTimer = null;
+      }, 500);
+    }, { passive: true });
+    el.addEventListener('touchend', () => {
+      if (_longPressTimer) { clearTimeout(_longPressTimer); _longPressTimer = null; }
+      else { setTimeout(() => UI._hideCardTooltip(), 1800); }
+    });
+    el.addEventListener('touchmove', () => {
+      if (_longPressTimer) { clearTimeout(_longPressTimer); _longPressTimer = null; }
+    }, { passive: true });
 
     const costVal = card.cost;
     const costClass = costVal === 0 ? 'zero' : '';
     const costDisplay = typeof costVal === 'number' ? costVal : 'X';
 
-    let bodyContent = '';
-    if (card.damage > 0) {
-      bodyContent += `<div class="card-damage">⚔️${card.damage * (card.hits || 1) > card.damage ? card.hits + 'x' : ''}${card.damage}</div>`;
-    }
-    if (card.block > 0) {
-      bodyContent += `<div class="card-block-val">🛡️${card.block}</div>`;
-    }
-    if (card.poison_stacks > 0) {
-      bodyContent += `<div style="color:#8e44ad">☠️${card.poison_stacks}</div>`;
-    }
-    if (card.draw > 0) {
-      bodyContent += `<div style="color:#3498db">📖+${card.draw}</div>`;
-    }
-    if (card.strength_gain > 0) {
-      bodyContent += `<div style="color:#e74c3c">💪+${card.strength_gain}</div>`;
-    }
+    // Art emoji by type
+    const artMap = { attack: '⚔️', skill: '🛡️', power: '⚡', curse: '💀', status: '🔮' };
+    const art = artMap[card.type] || '✨';
 
     const typeLabels = { attack: '攻击', skill: '技能', power: '能力', curse: '诅咒', status: '状态' };
+
+    let statsHtml = '';
+    if (card.damage > 0) {
+      const hitsPrefix = card.hits > 1 ? `${card.hits}×` : '';
+      statsHtml += `<span class="card-damage">${hitsPrefix}${card.damage}</span>`;
+    }
+    if (card.block > 0) {
+      statsHtml += `<span class="card-block-val">${card.block}</span>`;
+    }
+    if (card.poison_stacks > 0) {
+      statsHtml += `<span style="font-size:18px;color:#a060c8">☠️${card.poison_stacks}</span>`;
+    }
+    if (card.draw > 0) {
+      statsHtml += `<span style="font-size:16px;color:#5090e0">📖+${card.draw}</span>`;
+    }
+    if (card.strength_gain > 0) {
+      statsHtml += `<span style="font-size:16px;color:#e06040">💪+${card.strength_gain}</span>`;
+    }
 
     el.innerHTML = `
       <div class="card-cost ${costClass}">${costDisplay}</div>
       ${card.upgraded ? '<span class="card-upgraded">★</span>' : ''}
-      <div class="card-name">${card.name}</div>
-      <div class="card-type-label">${typeLabels[card.type] || '?'}</div>
-      <div class="card-body">
-        ${bodyContent}
+      <div class="card-header">
+        <div class="card-name">${card.name}</div>
+      </div>
+      <div class="card-art">${art}</div>
+      <div class="card-type-strip">${typeLabels[card.type] || '?'}</div>
+      <div class="card-stats">${statsHtml}</div>
+      <div class="card-desc-area">
         <div class="card-desc">${card.description || ''}</div>
       </div>
       ${card.exhaust ? '<div class="card-exhaust">耗尽</div>' : ''}
@@ -626,9 +655,21 @@ const UI = {
     this._moveCardTooltip(e);
   },
 
+  _showCardTooltipTouch(card, touch) {
+    // 移动端长按：居中显示 tooltip
+    this._showCardTooltip(card, { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
+    const tip = document.getElementById('card-tooltip');
+    if (tip) {
+      tip.style.left = '50%';
+      tip.style.top = '50%';
+      tip.style.transform = 'translate(-50%, -50%)';
+    }
+  },
+
   _moveCardTooltip(e) {
     const tip = document.getElementById('card-tooltip');
     if (!tip || tip.classList.contains('hidden')) return;
+    tip.style.transform = '';
     const margin = 14;
     const tw = tip.offsetWidth || 220;
     const th = tip.offsetHeight || 160;
@@ -658,4 +699,26 @@ function _logClass(log) {
   if (log.includes('恢复') || log.includes('治愈')) return 'heal';
   if (log.includes('格挡') || log.includes('防御')) return 'block';
   return 'info';
+}
+
+function _enemyPortrait(id) {
+  if (id.includes('cultist'))       return '🧙';
+  if (id.includes('jaw_worm'))      return '🐛';
+  if (id.includes('louse'))         return '🦂';
+  if (id.includes('slime'))         return '🟢';
+  if (id.includes('gremlin_nob'))   return '👺';
+  if (id.includes('lagavulin'))     return '😴';
+  if (id.includes('sentry'))        return '🤖';
+  if (id.includes('fungi'))         return '🍄';
+  if (id.includes('copper_golem'))  return '🏛️';
+  if (id.includes('serpent'))       return '🐍';
+  if (id.includes('iron_goliath'))  return '⚙️';
+  if (id.includes('void_knight'))   return '🗡️';
+  if (id.includes('corrupted_seer'))return '👁️';
+  if (id.includes('void_walker'))   return '🌑';
+  if (id.includes('dark_sentinel')) return '🌚';
+  if (id.includes('guardian'))      return '🛡️';
+  if (id.includes('hexa'))          return '🔮';
+  if (id.includes('corrupt'))       return '💻';
+  return '👾';
 }

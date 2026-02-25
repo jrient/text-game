@@ -257,6 +257,19 @@ const Game = {
 
     const targetIndex = this.selectedEnemy;
 
+    // Animate card leaving hand
+    const handEl = document.getElementById('hand-cards');
+    if (handEl) {
+      const cardEls = handEl.querySelectorAll('.card:not(.disabled)');
+      let playedIdx = 0;
+      handEl.querySelectorAll('.card').forEach((el, i) => {
+        if (!el.classList.contains('disabled')) {
+          if (playedIdx === cardIndex) el.classList.add('card-playing');
+          playedIdx++;
+        }
+      });
+    }
+
     try {
       const state = await API.playCard(this.gameId, cardIndex, targetIndex);
       // Flash enemy on damage + floating damage number
@@ -266,6 +279,14 @@ const Game = {
           UI.flashElement(`enemy-card-${targetIndex}`, 'damage');
           const match = dmgLogs[0].match(/(\d+)\s*点伤害/);
           if (match) UI.showDamageNumber(`enemy-card-${targetIndex}`, match[1]);
+          // Enemy shake
+          const enemyEl = document.getElementById(`enemy-card-${targetIndex}`);
+          if (enemyEl) {
+            enemyEl.classList.remove('enemy-shaking');
+            void enemyEl.offsetWidth;
+            enemyEl.classList.add('enemy-shaking');
+            enemyEl.addEventListener('animationend', () => enemyEl.classList.remove('enemy-shaking'), { once: true });
+          }
         }
       }
       this.applyState(state);

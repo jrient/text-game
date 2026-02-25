@@ -226,19 +226,22 @@ def deal_damage(damage: int, hits: int, enemy: dict, logs: List[str]) -> Tuple[i
 
 
 def deal_damage_to_player(damage: int, player: dict, logs: List[str]) -> Tuple[dict, int]:
-    """对玩家造成伤害，格挡作为护甲减免伤害（不消耗）"""
+    """对玩家造成伤害，格挡先吸收伤害并扣减"""
     block = player.get('block', 0)
-    actual_dmg = max(0, damage - block)
-    if actual_dmg > 0:
-        player['hp'] -= actual_dmg
-        if block > 0:
-            logs.append(f"护甲减免 {damage - actual_dmg} 点，你受到 {actual_dmg} 点伤害")
-        else:
-            logs.append(f"你受到 {actual_dmg} 点伤害")
+    if block >= damage:
+        player['block'] -= damage
+        actual_dmg = 0
+        logs.append(f"护甲完全抵消了 {damage} 点伤害（剩余格挡 {player['block']}）")
+    elif block > 0:
+        actual_dmg = damage - block
+        player['block'] = 0
+        player['hp'] = max(0, player['hp'] - actual_dmg)
+        logs.append(f"护甲抵消 {block} 点，你受到 {actual_dmg} 点伤害")
     else:
-        logs.append(f"护甲完全抵消了 {damage} 点伤害")
+        actual_dmg = damage
+        player['hp'] = max(0, player['hp'] - actual_dmg)
+        logs.append(f"你受到 {actual_dmg} 点伤害")
 
-    player['hp'] = max(0, player['hp'])
     return player, actual_dmg
 
 
