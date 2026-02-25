@@ -101,6 +101,9 @@ ALL_RELICS = [
     Relic('true_grit_relic', '强韧', '每次丢弃牌时获得2点格挡', 'common'),
     Relic('turnip', '萝卜', '无法获得虚弱效果', 'uncommon'),
     Relic('unceasing_top', '不停陀螺', '只要手牌为空就持续抽牌', 'uncommon'),
+    Relic('pen_nib', '笔尖', '每场战斗第一次攻击造成双倍伤害', 'uncommon'),
+    Relic('vajra', '金刚杵', '每场战斗开始获得1点力量', 'uncommon'),
+    Relic('preserved_insect', '标本昆虫', '精英战开始时敌人HP减少25%', 'uncommon'),
 
     # Boss遗物
     Relic('astrolabe', '星盘', '变身！将3张牌升级（Boss）', 'boss'),

@@ -225,6 +225,7 @@ const UI = {
     const el = document.createElement('div');
     el.className = `card ${card.type || 'skill'}${large ? ' large' : ''}`;
     if (card.upgraded) el.classList.add('upgraded');
+    if (card.rarity) el.classList.add(`rarity-${card.rarity}`);
 
     // Hover tooltip
     el.addEventListener('mouseenter', (e) => UI._showCardTooltip(card, e));
@@ -557,6 +558,20 @@ const UI = {
       <div class="stat-row"><span class="stat-label">牌组大小</span><span class="stat-value">${deckSize}</span></div>
     `;
   },
+  // ===== 浮动伤害数字 =====
+  showDamageNumber(targetId, amount) {
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl || !amount) return;
+    const num = document.createElement('div');
+    num.className = 'damage-number';
+    num.textContent = '-' + amount;
+    const rect = targetEl.getBoundingClientRect();
+    num.style.left = (rect.left + rect.width / 2 - 18) + 'px';
+    num.style.top = (rect.top + 10) + 'px';
+    document.body.appendChild(num);
+    num.addEventListener('animationend', () => num.remove());
+  },
+
   // ===== 伤害闪烁动画 =====
   flashElement(id, type = 'damage') {
     const el = document.getElementById(id);

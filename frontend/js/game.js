@@ -259,9 +259,14 @@ const Game = {
 
     try {
       const state = await API.playCard(this.gameId, cardIndex, targetIndex);
-      // Flash enemy on damage
-      if (state.log && state.log.some(l => l.includes('伤害') && !l.includes('你受到'))) {
-        UI.flashElement(`enemy-card-${targetIndex}`, 'damage');
+      // Flash enemy on damage + floating damage number
+      if (state.log) {
+        const dmgLogs = state.log.filter(l => l.includes('伤害') && !l.includes('你受到'));
+        if (dmgLogs.length > 0) {
+          UI.flashElement(`enemy-card-${targetIndex}`, 'damage');
+          const match = dmgLogs[0].match(/(\d+)\s*点伤害/);
+          if (match) UI.showDamageNumber(`enemy-card-${targetIndex}`, match[1]);
+        }
       }
       this.applyState(state);
       if (state.log) UI.appendLog(state.log);

@@ -45,6 +45,22 @@ def on_combat_start(player: dict, enemies: list) -> Tuple[dict, list, List[str]]
     if 'lantern' in relic_ids:
         player['_lantern_used'] = False  # 第一回合才生效
 
+    if 'vajra' in relic_ids:
+        player['strength'] = player.get('strength', 0) + 1
+        logs.append('🔱 遗物【金刚杵】：力量+1')
+
+    if 'preserved_insect' in relic_ids:
+        if any(e.get('is_elite') for e in enemies):
+            for e in enemies:
+                new_hp = max(1, int(e['hp'] * 0.75))
+                new_max = max(1, int(e['max_hp'] * 0.75))
+                e['hp'] = new_hp
+                e['max_hp'] = new_max
+            logs.append('🪲 遗物【标本昆虫】：精英敌人HP减少25%')
+
+    if 'pen_nib' in relic_ids:
+        player['_pen_nib_used'] = False
+
     return player, enemies, logs
 
 

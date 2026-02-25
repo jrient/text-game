@@ -1335,3 +1335,27 @@ body {
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }
+
+/* ===== 浮动伤害数字 ===== */
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  20%  { opacity: 1; transform: translateY(-12px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+}
+.damage-number {
+  position: fixed;
+  font-size: 26px;
+  font-weight: bold;
+  color: #ff5533;
+  text-shadow: 0 0 10px rgba(255, 60, 20, 0.8), 0 2px 4px rgba(0,0,0,0.9);
+  pointer-events: none;
+  z-index: 9999;
+  animation: floatUp 0.85s ease-out forwards;
+  white-space: nowrap;
+}
+
+/* ===== 卡牌稀有度边框 ===== */
+.card.rarity-common    { border-color: #7a6a50; }
+.card.rarity-uncommon  { border-color: #2a6aaa; box-shadow: 0 0 8px rgba(42,106,170,0.35); }
+.card.rarity-rare      { border-color: #c47a10; box-shadow: 0 0 10px rgba(196,122,16,0.5); }
+.card.rarity-starter   { border-color: var(--border-lit); }

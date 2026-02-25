@@ -13,9 +13,9 @@ NODE_TYPES = {
 }
 
 ACT_CONFIG = {
-    1: {'floors': 9, 'boss': 'boss1'},
-    2: {'floors': 9, 'boss': 'boss2'},
-    3: {'floors': 7, 'boss': 'boss3'},
+    1: {'floors': 7, 'boss': 'boss1'},
+    2: {'floors': 7, 'boss': 'boss2'},
+    3: {'floors': 5, 'boss': 'boss3'},
 }
 
 

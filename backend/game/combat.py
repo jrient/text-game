@@ -56,6 +56,11 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
                 logs.append(f"终幕：造成 {actual_dmg} 点伤害！")
         elif target_enemy:
             dmg = calculate_damage(card['damage'], card.get('hits', 1), player, target_enemy)
+            # 笔尖：第一次攻击双倍伤害
+            if not player.get('_pen_nib_used', True) and any(r['id'] == 'pen_nib' for r in player.get('relics', [])):
+                dmg = dmg * 2
+                player['_pen_nib_used'] = True
+                logs.append('✒️ 遗物【笔尖】：双倍伤害！')
             actual_dmg, target_enemy = deal_damage(dmg, card.get('hits', 1), target_enemy, logs)
             player['damage_dealt'] = player.get('damage_dealt', 0) + actual_dmg
             logs.append(f"对 {target_enemy['name']} 造成 {actual_dmg} 点伤害")
