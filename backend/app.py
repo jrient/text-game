@@ -421,6 +421,14 @@ def rest():
                     card['block'] = int(card['block'] * 1.3) + 2
                 if card.get('cost', 1) > 0:
                     card['cost'] = max(0, card['cost'] - 1)
+                # 升级后更新描述中的数值
+                import re
+                desc = card.get('description', '')
+                if card.get('damage', 0) > 0 and '伤害' in desc:
+                    desc = re.sub(r'\d+(?=点伤害)', str(card['damage']), desc, count=1)
+                if card.get('block', 0) > 0 and '格挡' in desc:
+                    desc = re.sub(r'\d+(?=点格挡)', str(card['block']), desc, count=1)
+                card['description'] = desc
                 state['message'] = f'✨ 卡牌【{card["name"]}】已升级！'
                 break
 

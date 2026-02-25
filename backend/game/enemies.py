@@ -6,10 +6,11 @@ from typing import List, Optional
 
 @dataclass
 class EnemyIntent:
-    action: str      # attack, block, buff, special
+    action: str      # attack, block, buff, special, debuff
     value: int = 0   # 伤害值或格挡值
     times: int = 1   # 次数
     description: str = ""
+    debuff_type: str = "weak"  # debuff行动类型：weak / vulnerable
 
 
 @dataclass
@@ -228,6 +229,94 @@ class DarkSentinel(Enemy):
         return EnemyIntent('buff', 2, 1, '强化（力量+2）')
 
 
+# ===== 第2幕精英敌人 =====
+class SerpentDancer(Enemy):
+    """第2幕精英 - 毒舞者（虚弱施加型）"""
+    def __init__(self):
+        super().__init__('serpent_dancer', '毒舞者', random.randint(120, 130))
+        self.is_elite = True
+
+    def get_next_intent(self) -> EnemyIntent:
+        turn = len(self.move_history)
+        cycle = turn % 5
+        if cycle == 0:
+            return EnemyIntent('debuff', 2, 1, '毒雾缠绕（使你虚弱2回合）')
+        elif cycle == 1:
+            dmg = 15 + self.strength
+            return EnemyIntent('attack', dmg, 1, f'毒牙 {dmg}')
+        elif cycle == 2:
+            return EnemyIntent('buff', 2, 1, '毒液强化（力量+2）')
+        elif cycle == 3:
+            return EnemyIntent('debuff', 3, 1, '死亡缠绕（使你虚弱3回合）')
+        else:
+            dmg = 22 + self.strength
+            return EnemyIntent('attack', dmg, 1, f'猛烈毒击 {dmg}')
+
+
+class IronGoliath(Enemy):
+    """第2幕精英 - 铁巨人（高格挡重击型）"""
+    def __init__(self):
+        super().__init__('iron_goliath', '铁巨人', random.randint(145, 160))
+        self.is_elite = True
+
+    def get_next_intent(self) -> EnemyIntent:
+        turn = len(self.move_history)
+        cycle = turn % 4
+        if cycle == 0:
+            return EnemyIntent('block', 25, 1, '铁甲（格挡25）')
+        elif cycle == 1:
+            return EnemyIntent('attack', 22, 1, '巨拳 22')
+        elif cycle == 2:
+            return EnemyIntent('attack', 10, 2, '踩踏 2×10')
+        else:
+            return EnemyIntent('buff', 3, 1, '愤怒（力量+3）')
+
+
+# ===== 第3幕精英敌人 =====
+class VoidKnight(Enemy):
+    """第3幕精英 - 虚空骑士（快速力量堆叠型）"""
+    def __init__(self):
+        super().__init__('void_knight', '虚空骑士', random.randint(175, 190))
+        self.is_elite = True
+
+    def get_next_intent(self) -> EnemyIntent:
+        turn = len(self.move_history)
+        cycle = turn % 4
+        if cycle == 0:
+            return EnemyIntent('buff', 4, 1, '虚空充能（力量+4）')
+        elif cycle == 1:
+            dmg = 28 + self.strength
+            return EnemyIntent('attack', dmg, 1, f'暗影斩 {dmg}')
+        elif cycle == 2:
+            return EnemyIntent('buff', 2, 1, '虚空汲取（力量+2）')
+        else:
+            dmg = 18 + self.strength
+            return EnemyIntent('attack', dmg, 2, f'虚空爆发 2×{dmg}')
+
+
+class CorruptedSeer(Enemy):
+    """第3幕精英 - 腐化占卜师（易伤施加+高伤）"""
+    def __init__(self):
+        super().__init__('corrupted_seer', '腐化占卜师', random.randint(165, 180))
+        self.is_elite = True
+
+    def get_next_intent(self) -> EnemyIntent:
+        turn = len(self.move_history)
+        cycle = turn % 5
+        if cycle == 0:
+            return EnemyIntent('debuff', 2, 1, '黑暗祈祷（使你易伤2回合）', 'vulnerable')
+        elif cycle == 1:
+            dmg = 20 + self.strength
+            return EnemyIntent('attack', dmg, 1, f'腐化射线 {dmg}')
+        elif cycle == 2:
+            return EnemyIntent('block', 18, 1, '虚空护盾（格挡18）')
+        elif cycle == 3:
+            return EnemyIntent('debuff', 3, 1, '凝视（使你易伤3回合）', 'vulnerable')
+        else:
+            dmg = 30 + self.strength
+            return EnemyIntent('attack', dmg, 1, f'终焉之光 {dmg}')
+
+
 # ===== Boss =====
 class TheGuardian(Enemy):
     """第1幕Boss"""
@@ -296,10 +385,10 @@ ENEMY_POOLS = {
     'act1_elite': [GremlinNob, Lagavulin, SentryPair],
     'act1_boss': [TheGuardian],
     'act2_normal': [FungiBeast, CopperGolem],
-    'act2_elite': [Lagavulin, SentryPair, GremlinNob],
+    'act2_elite': [SerpentDancer, IronGoliath],
     'act2_boss': [HexaGhost],
     'act3_normal': [VoidWalker, DarkSentinel],
-    'act3_elite': [Lagavulin, SentryPair, GremlinNob],
+    'act3_elite': [VoidKnight, CorruptedSeer],
     'act3_boss': [CorruptHeart],
 }
 
@@ -346,6 +435,7 @@ def create_enemy_from_dict(data: dict) -> Enemy:
             action=intent_data['action'],
             value=intent_data.get('value', 0),
             times=intent_data.get('times', 1),
-            description=intent_data.get('description', '')
+            description=intent_data.get('description', ''),
+            debuff_type=intent_data.get('debuff_type', 'weak'),
         )
     return enemy

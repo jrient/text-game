@@ -225,6 +225,11 @@ const UI = {
     el.className = `card ${card.type || 'skill'}${large ? ' large' : ''}`;
     if (card.upgraded) el.classList.add('upgraded');
 
+    // Hover tooltip
+    el.addEventListener('mouseenter', (e) => UI._showCardTooltip(card, e));
+    el.addEventListener('mousemove', (e) => UI._moveCardTooltip(e));
+    el.addEventListener('mouseleave', () => UI._hideCardTooltip());
+
     const costVal = card.cost;
     const costClass = costVal === 0 ? 'zero' : '';
     const costDisplay = typeof costVal === 'number' ? costVal : 'X';
@@ -550,6 +555,67 @@ const UI = {
       <div class="stat-row"><span class="stat-label">遗物数量</span><span class="stat-value">${relicsCount}</span></div>
       <div class="stat-row"><span class="stat-label">牌组大小</span><span class="stat-value">${deckSize}</span></div>
     `;
+  },
+  // ===== 卡牌 Tooltip =====
+  _showCardTooltip(card, e) {
+    const tip = document.getElementById('card-tooltip');
+    if (!tip) return;
+    const typeLabels = { attack: '攻击', skill: '技能', power: '能力', curse: '诅咒', status: '状态' };
+    const rarityLabels = { starter: '基础', common: '普通', uncommon: '非普通', rare: '稀有', curse: '诅咒' };
+    const rarityColors = { starter: '#9a7d5a', common: '#e8d5b0', uncommon: '#3498db', rare: '#f39c12', curse: '#888' };
+
+    const costStr = typeof card.cost === 'number' ? `${card.cost}费` : 'X费';
+    const rarityColor = rarityColors[card.rarity] || '#e8d5b0';
+    const upgradedMark = card.upgraded ? ' <span style="color:#f39c12">★升级</span>' : '';
+
+    let statsHtml = '';
+    if (card.damage > 0) statsHtml += `<div>⚔️ 伤害：<strong>${card.damage}</strong>${card.hits > 1 ? ` ×${card.hits}` : ''}</div>`;
+    if (card.block > 0) statsHtml += `<div>🛡️ 格挡：<strong>${card.block}</strong></div>`;
+    if (card.poison_stacks > 0) statsHtml += `<div>☠️ 毒素：<strong>${card.poison_stacks}</strong></div>`;
+    if (card.draw > 0) statsHtml += `<div>📖 抽牌：<strong>+${card.draw}</strong></div>`;
+    if (card.strength_gain > 0) statsHtml += `<div>💪 力量：<strong>+${card.strength_gain}</strong></div>`;
+    if (card.weak_turns > 0) statsHtml += `<div>💔 虚弱：<strong>${card.weak_turns}回合</strong></div>`;
+    if (card.vulnerable_turns > 0) statsHtml += `<div>⬇️ 易伤：<strong>${card.vulnerable_turns}回合</strong></div>`;
+
+    const flagsHtml = [
+      card.exhaust ? '<span class="tip-flag exhaust">耗尽</span>' : '',
+      card.ethereal ? '<span class="tip-flag ethereal">以太</span>' : '',
+      card.innate ? '<span class="tip-flag innate">先手</span>' : '',
+      card.retain ? '<span class="tip-flag retain">保留</span>' : '',
+    ].filter(Boolean).join('');
+
+    tip.innerHTML = `
+      <div class="tip-header">
+        <span class="tip-name">${card.name}${upgradedMark}</span>
+        <span class="tip-cost">${costStr}</span>
+      </div>
+      <div class="tip-type" style="color:${rarityColor}">${typeLabels[card.type] || '?'} · ${rarityLabels[card.rarity] || ''}</div>
+      ${statsHtml ? `<div class="tip-stats">${statsHtml}</div>` : ''}
+      <div class="tip-desc">${card.description || ''}</div>
+      ${flagsHtml ? `<div class="tip-flags">${flagsHtml}</div>` : ''}
+    `;
+    tip.classList.remove('hidden');
+    this._moveCardTooltip(e);
+  },
+
+  _moveCardTooltip(e) {
+    const tip = document.getElementById('card-tooltip');
+    if (!tip || tip.classList.contains('hidden')) return;
+    const margin = 14;
+    const tw = tip.offsetWidth || 220;
+    const th = tip.offsetHeight || 160;
+    let x = e.clientX + margin;
+    let y = e.clientY - th / 2;
+    if (x + tw > window.innerWidth) x = e.clientX - tw - margin;
+    if (y < 4) y = 4;
+    if (y + th > window.innerHeight - 4) y = window.innerHeight - th - 4;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  },
+
+  _hideCardTooltip() {
+    const tip = document.getElementById('card-tooltip');
+    if (tip) tip.classList.add('hidden');
   },
 };
 

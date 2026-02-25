@@ -50,6 +50,17 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
         player['damage_dealt'] = player.get('damage_dealt', 0) + total
         logs.append(f"对所有敌人共造成 {total} 点伤害")
 
+    # ---- 特殊卡牌：重拳（伤害=当前格挡值）----
+    if card.get('id') == 'w_body_slam' and target_enemy:
+        body_dmg = player.get('block', 0)
+        if body_dmg > 0:
+            body_dmg_calc = calculate_damage(body_dmg, 1, player, target_enemy)
+            actual_dmg, target_enemy = deal_damage(body_dmg_calc, 1, target_enemy, logs)
+            player['damage_dealt'] = player.get('damage_dealt', 0) + actual_dmg
+            logs.append(f"重拳：造成 {actual_dmg} 点伤害（来自格挡 {body_dmg}）")
+        else:
+            logs.append("重拳：格挡为0，未造成伤害")
+
     # ---- 格挡效果 ----
     if card.get('block', 0) > 0:
         block_gain = calculate_block(card['block'], player)
@@ -270,6 +281,17 @@ def enemy_turn(player: dict, enemies: List[dict]) -> Tuple[dict, List[dict], Lis
             if intent.get('description'):
                 logs.append(f"{enemy['name']}：{intent['description']}")
 
+        elif action == 'debuff':
+            # 对玩家施加虚弱或易伤
+            debuff_type = intent.get('debuff_type', 'weak')
+            turns = max(1, value)
+            if debuff_type == 'vulnerable':
+                player['vulnerable_turns'] = player.get('vulnerable_turns', 0) + turns
+            else:
+                player['weak_turns'] = player.get('weak_turns', 0) + turns
+            desc = intent.get('description') or f'{"易伤" if debuff_type == "vulnerable" else "虚弱"}{turns}回合'
+            logs.append(f"{enemy['name']}：{desc}")
+
         elif action == 'special':
             logs.append(f"{enemy['name']}：{intent.get('description', '特殊行动')}")
 
@@ -393,7 +415,59 @@ def _generate_next_intent(enemy: dict) -> dict:
         ]
         return patterns[move_count % len(patterns)]
 
-    # 第3幕敌人
+    # 第2幕精英
+    elif 'serpent_dancer' in eid:
+        cycle = move_count % 5
+        if cycle == 0:
+            return {'action': 'debuff', 'value': 2, 'debuff_type': 'weak', 'times': 1, 'description': '毒雾缠绕 虚弱2回合'}
+        elif cycle == 1:
+            v = 15 + enemy.get('strength', 0)
+            return {'action': 'attack', 'value': v, 'times': 1, 'description': f'毒牙 {v}'}
+        elif cycle == 2:
+            return {'action': 'buff', 'value': 2, 'times': 1, 'description': '毒液强化 力量+2'}
+        elif cycle == 3:
+            return {'action': 'debuff', 'value': 3, 'debuff_type': 'weak', 'times': 1, 'description': '死亡缠绕 虚弱3回合'}
+        else:
+            v = 22 + enemy.get('strength', 0)
+            return {'action': 'attack', 'value': v, 'times': 1, 'description': f'猛烈毒击 {v}'}
+    elif 'iron_goliath' in eid:
+        patterns = [
+            {'action': 'block', 'value': 25, 'times': 1, 'description': '铁甲 格挡25'},
+            {'action': 'attack', 'value': 22, 'times': 1, 'description': '巨拳 22'},
+            {'action': 'attack', 'value': 10, 'times': 2, 'description': '踩踏 2×10'},
+            {'action': 'buff', 'value': 3, 'times': 1, 'description': '愤怒 力量+3'},
+        ]
+        return patterns[move_count % len(patterns)]
+
+    # 第3幕精英
+    elif 'void_knight' in eid:
+        cycle = move_count % 4
+        if cycle == 0:
+            return {'action': 'buff', 'value': 4, 'times': 1, 'description': '虚空充能 力量+4'}
+        elif cycle == 1:
+            v = 28 + enemy.get('strength', 0)
+            return {'action': 'attack', 'value': v, 'times': 1, 'description': f'暗影斩 {v}'}
+        elif cycle == 2:
+            return {'action': 'buff', 'value': 2, 'times': 1, 'description': '虚空汲取 力量+2'}
+        else:
+            v = 18 + enemy.get('strength', 0)
+            return {'action': 'attack', 'value': v, 'times': 2, 'description': f'虚空爆发 2×{v}'}
+    elif 'corrupted_seer' in eid:
+        cycle = move_count % 5
+        if cycle == 0:
+            return {'action': 'debuff', 'value': 2, 'debuff_type': 'vulnerable', 'times': 1, 'description': '黑暗祈祷 易伤2回合'}
+        elif cycle == 1:
+            v = 20 + enemy.get('strength', 0)
+            return {'action': 'attack', 'value': v, 'times': 1, 'description': f'腐化射线 {v}'}
+        elif cycle == 2:
+            return {'action': 'block', 'value': 18, 'times': 1, 'description': '虚空护盾 格挡18'}
+        elif cycle == 3:
+            return {'action': 'debuff', 'value': 3, 'debuff_type': 'vulnerable', 'times': 1, 'description': '凝视 易伤3回合'}
+        else:
+            v = 30 + enemy.get('strength', 0)
+            return {'action': 'attack', 'value': v, 'times': 1, 'description': f'终焉之光 {v}'}
+
+    # 第3幕普通敌人
     elif 'void_walker' in eid:
         r = random.random()
         if r < 0.55:
@@ -503,6 +577,14 @@ def end_player_turn(player: dict, enemies: List[dict]) -> Tuple[dict, List[dict]
             logs.extend(relic_logs)
         except Exception:
             pass
+
+    # 灼伤伤害：统计所有牌堆中的灼伤牌，每张回合末失去1点HP
+    all_deck_cards = (player.get('hand', []) + player.get('discard_pile', [])
+                      + player.get('draw_pile', []) + player.get('exhaust_pile', []))
+    burn_count = sum(1 for c in all_deck_cards if c.get('id') == 'curse_burn')
+    if burn_count > 0:
+        player['hp'] = max(0, player['hp'] - burn_count)
+        logs.append(f'🔥 灼伤：受到 {burn_count} 点伤害（牌组中有 {burn_count} 张灼伤）')
 
     # 格挡在战斗内持续有效，不在回合结束时重置
     player.pop('_calipers_block', None)  # 清除已无用的卡尺缓存

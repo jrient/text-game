@@ -1020,14 +1020,52 @@ body {
   background: linear-gradient(160deg, #201408, #140e06);
   border: 1px solid var(--border-lit);
   border-radius: 8px;
-  padding: 11px;
+  padding: 11px 13px;
   font-size: 12px;
   z-index: 3000;
   pointer-events: none;
-  max-width: 200px;
-  box-shadow: var(--shadow);
+  width: 220px;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.85), 0 0 12px rgba(200,76,42,0.2);
   color: var(--text-primary);
+  line-height: 1.5;
 }
+.tip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+.tip-name { font-weight: bold; font-size: 13px; color: var(--text-primary); }
+.tip-cost {
+  background: rgba(212,149,15,0.2);
+  color: var(--accent-gold);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-weight: bold;
+}
+.tip-type { font-size: 11px; margin-bottom: 6px; }
+.tip-stats {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 5px 0;
+  margin: 5px 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.tip-stats strong { color: var(--text-primary); }
+.tip-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+.tip-flags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.tip-flag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+.tip-flag.exhaust { background: rgba(138,24,24,0.4); color: #e07070; border: 1px solid #8a1818; }
+.tip-flag.ethereal { background: rgba(52,52,130,0.4); color: #8090e0; border: 1px solid #334; }
+.tip-flag.innate { background: rgba(42,140,80,0.4); color: #70e090; border: 1px solid #1a5a30; }
+.tip-flag.retain { background: rgba(120,80,20,0.4); color: #d4a04a; border: 1px solid #6a4010; }
 
 /* ===== 滚动条 ===== */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
