@@ -102,10 +102,7 @@ def on_turn_end(player: dict, enemies: list) -> Tuple[dict, list, List[str]]:
         if player.get('energy', 0) > 0:
             logs.append(f'🍦 遗物【冰淇淋】：保留{player["energy"]}点能量')
 
-    # 卡尺：保留最多15点格挡（不超过当前格挡）
-    if 'calipers' in relic_ids:
-        current_block = player.get('block', 0)
-        player['_calipers_block'] = min(15, current_block)
+
 
     # 叮钹：每次丢弃牌时伤害（在这里处理弃牌时的效果）
     return player, enemies, logs

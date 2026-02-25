@@ -467,9 +467,8 @@ def end_player_turn(player: dict, enemies: List[dict]) -> Tuple[dict, List[dict]
         except Exception:
             pass
 
-    # 回合结束格挡处理（卡尺遗物：保留15点格挡）
-    saved_block = player.pop('_calipers_block', 0)
-    player['block'] = saved_block
+    # 格挡在战斗内持续有效，不在回合结束时重置
+    player.pop('_calipers_block', None)  # 清除已无用的卡尺缓存
 
     # 执行敌人回合
     player, enemies, enemy_logs = enemy_turn(player, enemies)
