@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  game:
+    build: .
+    container_name: text-roguelike-game
+    ports:
+      - "8080:5000"
+    environment:
+      - PORT=5000
+      - DEBUG=false
+      - DB_PATH=/app/data/textgame.db
+    volumes:
+      - game-data:/app/data
+    restart: unless-stopped
+    networks:
+      - public_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/characters')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  game-data:
+    driver: local
+
+networks:
+  public_network:
+    external: true
+    name: public_server_network

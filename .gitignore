@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+venv/
+.venv/
+.env
+
+# 数据库
+*.db
+*.sqlite3
+
+# 日志
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# 系统
+.DS_Store
+Thumbs.db

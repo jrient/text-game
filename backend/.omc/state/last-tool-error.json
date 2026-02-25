@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd /data/project/text-game && docker compose down && docker compose up -d && sleep 4 && docker compose ps\",\"description\":\"重启容器（含持久化存储）\"}",
+  "error": "Exit code 1\nvalidating /data/project/text-game/docker-compose.yml: volumes.game-data additional properties 'healthcheck' not allowed\n\nvalidating /data/project/text-game/docker-compose.yml: volumes.game-data additional properties 'healthcheck' not allowed",
+  "timestamp": "2026-02-24T15:59:01.449Z",
+  "retry_count": 1
+}

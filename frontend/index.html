@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>深渊征途 - 文字肉鸽游戏</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 主菜单 -->
+    <div id="screen-menu" class="screen active">
+      <div class="menu-bg"></div>
+      <div class="menu-content">
+        <h1 class="game-title">
+          <span class="title-top">深渊</span>
+          <span class="title-bottom">征途</span>
+        </h1>
+        <p class="game-subtitle">ABYSS JOURNEY · 文字肉鸽卡牌游戏</p>
+        <button class="btn btn-primary btn-large" onclick="Game.showCharacterSelect()">
+          ⚔️ 开始冒险
+        </button>
+        <button class="btn btn-secondary" onclick="Game.showLeaderboard()">
+          🏆 排行榜
+        </button>
+        <div class="game-info">
+          <p>📜 探索随机地图 · 🃏 构建卡牌组合 · 💀 永久死亡机制</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 职业选择 -->
+    <div id="screen-character" class="screen">
+      <div class="screen-header">
+        <button class="btn btn-ghost" onclick="Game.showMenu()">← 返回</button>
+        <h2>选择职业</h2>
+      </div>
+      <div class="character-grid" id="character-list"></div>
+      <div class="character-detail" id="character-detail">
+        <p>点击职业查看详情</p>
+      </div>
+      <div class="character-confirm hidden" id="character-confirm">
+        <input type="text" id="player-name" placeholder="输入你的名字（可选）" maxlength="12">
+        <div class="ascension-selector">
+          <label for="ascension-select">⚡ 天赋难度</label>
+          <select id="ascension-select" class="ascension-select">
+            <option value="0">天赋0 · 普通模式</option>
+            <option value="1">天赋1 · 精英更频繁</option>
+            <option value="2">天赋2 · 敌人HP+10%</option>
+            <option value="3">天赋3 · 敌人HP+15%</option>
+            <option value="4">天赋4 · 伤害+10%</option>
+            <option value="5">天赋5 · 极限挑战</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-large" id="btn-start-game">🎮 开始游戏</button>
+      </div>
+    </div>
+
+    <!-- 地图界面 -->
+    <div id="screen-map" class="screen">
+      <div class="game-header">
+        <div class="player-info" id="header-player-info">
+          <span id="header-char-icon">⚔️</span>
+          <span id="header-char-name">战士</span>
+          <span class="hp-bar-wrapper">
+            <span class="hp-label" id="header-hp">80/80</span>
+            <div class="hp-bar"><div class="hp-fill" id="header-hp-fill" style="width:100%"></div></div>
+          </span>
+          <span class="gold-display">💰 <span id="header-gold">99</span></span>
+          <span class="floor-display">🏔️ 第<span id="header-floor">1</span>层</span>
+        </div>
+        <div class="relics-row" id="header-relics"></div>
+      </div>
+      <div class="map-container" id="map-container">
+        <div class="map-title">选择路线</div>
+        <div id="map-nodes"></div>
+      </div>
+      <div class="map-message" id="map-message"></div>
+    </div>
+
+    <!-- 战斗界面 -->
+    <div id="screen-combat" class="screen">
+      <div class="combat-header">
+        <div class="player-status">
+          <span id="combat-char-icon">⚔️</span>
+          <div class="status-details">
+            <div class="player-name" id="combat-player-name">战士</div>
+            <div class="hp-bar-wrapper">
+              <span id="combat-hp">80/80</span>
+              <div class="hp-bar"><div class="hp-fill" id="combat-hp-fill" style="width:100%"></div></div>
+            </div>
+            <div class="status-effects" id="combat-status-effects"></div>
+          </div>
+          <div class="block-display">
+            <span class="block-icon">🛡️</span>
+            <span id="combat-block">0</span>
+          </div>
+        </div>
+        <div class="energy-display">
+          <span id="combat-energy">3</span><span>/</span><span id="combat-max-energy">3</span>
+          <div class="energy-label">能量</div>
+        </div>
+        <div class="combat-actions">
+          <div class="potions-bar" id="potions-bar"></div>
+          <button class="btn btn-danger" onclick="Game.endTurn()">结束回合 [E]</button>
+        </div>
+        <div class="turn-indicator" id="turn-indicator">第1回合</div>
+      </div>
+
+      <div class="combat-arena">
+        <div class="enemies-area" id="enemies-area"></div>
+        <div class="combat-middle">
+          <div class="combat-log" id="combat-log">
+            <div class="log-title">战斗日志</div>
+            <div class="log-content" id="log-content"></div>
+          </div>
+          <div class="deck-info">
+            <div class="deck-count" onclick="Game.viewDeck()">
+              📚 牌组 <span id="draw-count">0</span>
+            </div>
+            <div class="discard-count">
+              🗑️ 弃牌 <span id="discard-count">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hand-area" id="hand-area">
+        <div class="hand-cards" id="hand-cards"></div>
+      </div>
+    </div>
+
+    <!-- 卡牌奖励 -->
+    <div id="screen-card-reward" class="screen">
+      <div class="reward-header">
+        <h2>🎁 选择奖励卡牌</h2>
+        <p id="reward-message">选择一张卡牌加入你的牌组</p>
+      </div>
+      <div class="reward-cards" id="reward-cards"></div>
+      <button class="btn btn-secondary" onclick="Game.skipCardReward()">跳过（不选）</button>
+    </div>
+
+    <!-- Boss遗物 -->
+    <div id="screen-boss-relic" class="screen">
+      <div class="reward-header">
+        <h2>✨ 选择Boss遗物</h2>
+        <p>强大的遗物将伴你继续征途</p>
+      </div>
+      <div class="relic-choices" id="boss-relic-choices"></div>
+    </div>
+
+    <!-- 休息点 -->
+    <div id="screen-rest" class="screen">
+      <div class="rest-container">
+        <h2>🔥 篝火</h2>
+        <p>你在温暖的篝火旁稍作休憩</p>
+        <div class="rest-options">
+          <button class="btn btn-primary rest-btn" onclick="Game.restHeal()">
+            💊 休息恢复
+            <small>恢复约30%最大HP</small>
+          </button>
+          <button class="btn btn-secondary rest-btn" onclick="Game.showUpgradeSelect()">
+            ✨ 升级卡牌
+            <small>永久强化一张卡牌</small>
+          </button>
+        </div>
+        <div class="upgrade-select hidden" id="upgrade-select">
+          <h3>选择要升级的卡牌：</h3>
+          <div class="upgrade-deck" id="upgrade-deck-cards"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 商店 -->
+    <div id="screen-shop" class="screen">
+      <div class="shop-header">
+        <h2>🛒 神秘商店</h2>
+        <div class="shop-gold">💰 <span id="shop-gold">0</span> 金币</div>
+        <button class="btn btn-ghost" onclick="Game.leaveShop()">离开商店</button>
+      </div>
+      <div class="shop-content">
+        <div class="shop-section">
+          <h3>📋 卡牌</h3>
+          <div class="shop-items" id="shop-cards"></div>
+        </div>
+        <div class="shop-section">
+          <h3>💎 遗物</h3>
+          <div class="shop-items" id="shop-relics"></div>
+        </div>
+        <div class="shop-section">
+          <h3>🧪 药水</h3>
+          <div class="shop-items" id="shop-potions"></div>
+        </div>
+        <div class="shop-section">
+          <h3>🔧 服务</h3>
+          <div class="shop-services" id="shop-services"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 事件 -->
+    <div id="screen-event" class="screen">
+      <div class="event-container">
+        <div class="event-image" id="event-image">❓</div>
+        <h2 id="event-title">神秘事件</h2>
+        <p id="event-description" class="event-desc"></p>
+        <div class="event-choices" id="event-choices"></div>
+      </div>
+    </div>
+
+    <!-- 游戏结束 -->
+    <div id="screen-game-over" class="screen">
+      <div class="game-over-container">
+        <div class="game-over-icon">💀</div>
+        <h1>游戏结束</h1>
+        <div class="stats" id="game-over-stats"></div>
+        <button class="btn btn-primary btn-large" onclick="Game.showMenu()">🔄 重新开始</button>
+      </div>
+    </div>
+
+    <!-- 胜利 -->
+    <div id="screen-victory" class="screen">
+      <div class="victory-container">
+        <div class="victory-particles"></div>
+        <div class="victory-icon">🏆</div>
+        <h1>征服了深渊！</h1>
+        <p class="victory-msg">你击败了腐化之心，拯救了世界！</p>
+        <div class="stats" id="victory-stats"></div>
+        <button class="btn btn-primary btn-large" onclick="Game.showMenu()">🔄 再次挑战</button>
+      </div>
+    </div>
+
+    <!-- 排行榜 -->
+    <div id="screen-leaderboard" class="screen">
+      <div class="leaderboard-container">
+        <div class="screen-header">
+          <button class="btn btn-ghost" onclick="Game.showMenu()">← 返回</button>
+          <h2>🏆 排行榜</h2>
+        </div>
+        <div id="leaderboard-stats" class="lb-stats"></div>
+        <div id="leaderboard-content" class="lb-content">
+          <div class="loading">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 牌组查看弹窗 -->
+    <div id="modal-deck" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>📚 我的牌组</h3>
+          <button class="btn btn-ghost" onclick="Game.closeDeckModal()">✕</button>
+        </div>
+        <div class="modal-deck-cards" id="modal-deck-cards"></div>
+      </div>
+    </div>
+
+    <!-- 卡牌详情tooltip -->
+    <div id="card-tooltip" class="card-tooltip hidden"></div>
+
+    <!-- 通知 -->
+    <div id="notification" class="notification hidden"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
