@@ -4,12 +4,12 @@ from typing import List, Dict, Optional
 
 
 NODE_TYPES = {
-    'monster': {'label': '⚔️ 战斗', 'color': 'red', 'weight': 45},
-    'elite': {'label': '💀 精英', 'color': 'purple', 'weight': 12},
-    'rest': {'label': '🔥 篝火', 'color': 'green', 'weight': 12},
-    'shop': {'label': '🛒 商店', 'color': 'gold', 'weight': 10},
-    'event': {'label': '❓ 事件', 'color': 'cyan', 'weight': 16},
-    'treasure': {'label': '📦 宝箱', 'color': 'yellow', 'weight': 5},
+    'monster': {'label': '⚔️ 战斗', 'color': 'red', 'weight': 52},
+    'elite': {'label': '💀 精英', 'color': 'purple', 'weight': 14},
+    'rest': {'label': '🔥 篝火', 'color': 'green', 'weight': 8},
+    'shop': {'label': '🛒 商店', 'color': 'gold', 'weight': 8},
+    'event': {'label': '❓ 事件', 'color': 'cyan', 'weight': 14},
+    'treasure': {'label': '📦 宝箱', 'color': 'yellow', 'weight': 4},
 }
 
 ACT_CONFIG = {

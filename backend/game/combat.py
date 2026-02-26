@@ -251,6 +251,11 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
     if card.get('exhaust'):
         logs.append(f"【{card['name']}】已耗尽")
 
+    # ---- 哥布林领袖愤怒：打出技能牌时额外受伤 ----
+    if card_type == 'skill' and player.get('_nob_rage'):
+        player, _ = deal_damage_to_player(6, player, logs)
+        logs.append('😡 哥布林愤怒：受到6点伤害！')
+
     # ---- 遗物触发：打出卡牌 ----
     try:
         from .relic_effects import on_card_played
@@ -421,11 +426,23 @@ def enemy_turn(player: dict, enemies: List[dict]) -> Tuple[dict, List[dict], Lis
                 logs.append(f"{enemy['name']}：{intent['description']}")
 
         elif action == 'buff':
-            enemy['strength'] = enemy.get('strength', 0) + value
-            if value > 0:
-                logs.append(f"{enemy['name']} 力量 +{value}")
-            if intent.get('description'):
-                logs.append(f"{enemy['name']}：{intent['description']}")
+            eid_buff = enemy.get('id', '')
+            desc_buff = intent.get('description', '')
+            # 沉睡巨魔觉醒：力量-1, 敏捷-1（debuff玩家）
+            if 'lagavulin' in eid_buff and '觉醒' in desc_buff:
+                player['strength'] = player.get('strength', 0) - 1
+                player['dexterity'] = player.get('dexterity', 0) - 1
+                logs.append(f"⚠️ 沉睡巨魔觉醒！你的力量-1，敏捷-1")
+            # 哥布林领袖愤怒：之后打出技能牌时额外受到伤害（标记状态）
+            elif 'gremlin_nob' in eid_buff and '愤怒' in desc_buff:
+                player['_nob_rage'] = True
+                logs.append(f"😡 哥布林领袖愤怒：打出技能牌时额外受到6点伤害！")
+            else:
+                if value > 0:
+                    enemy['strength'] = enemy.get('strength', 0) + value
+                    logs.append(f"{enemy['name']} 力量 +{value}")
+                if desc_buff:
+                    logs.append(f"{enemy['name']}：{desc_buff}")
 
         elif action == 'debuff':
             # 对玩家施加虚弱或易伤
@@ -439,7 +456,25 @@ def enemy_turn(player: dict, enemies: List[dict]) -> Tuple[dict, List[dict], Lis
             logs.append(f"{enemy['name']}：{desc}")
 
         elif action == 'special':
-            logs.append(f"{enemy['name']}：{intent.get('description', '特殊行动')}")
+            eid = enemy.get('id', '')
+            desc = intent.get('description', '特殊行动')
+            logs.append(f"{enemy['name']}：{desc}")
+            # 六角幽灵：召唤将灼伤牌加入弃牌堆
+            if 'hexa' in eid:
+                from .cards import ALL_CARDS
+                burn_card = dict(ALL_CARDS.get('curse_burn', ALL_CARDS.get('curse_wound', next(iter(ALL_CARDS.values())))).to_dict())
+                for _ in range(3):
+                    player.setdefault('discard_pile', []).append(dict(burn_card))
+                logs.append('🔥 3张灼伤牌加入了你的弃牌堆！（每回合结束失去1HP）')
+            # 沉睡巨魔：虹吸——偷取玩家力量和敏捷
+            elif 'lagavulin' in eid and '虹吸' in desc:
+                steal_str = min(1, player.get('strength', 0))
+                steal_dex = min(1, player.get('dexterity', 0))
+                player['strength'] = player.get('strength', 0) - steal_str
+                player['dexterity'] = player.get('dexterity', 0) - steal_dex
+                enemy['strength'] = enemy.get('strength', 0) + steal_str
+                enemy['dexterity'] = enemy.get('dexterity', 0) + steal_dex
+                logs.append(f'沉睡巨魔虹吸：偷取你 {steal_str} 力量 {steal_dex} 敏捷')
 
         # 更新敌人虚弱/易伤回合
         if enemy.get('weak_turns', 0) > 0:

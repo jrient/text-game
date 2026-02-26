@@ -266,7 +266,8 @@ def on_combat_end(player: dict, is_victory: bool) -> Tuple[dict, List[str]]:
                 logs.append('🍖 遗物【骨头上的肉】：HP低，恢复12点HP')
 
     # 清理战斗临时状态
-    for key in ['_lantern_used', '_horn_cleat_active', '_calipers_block', '_flower_count']:
+    for key in ['_lantern_used', '_horn_cleat_active', '_calipers_block', '_flower_count',
+                '_nob_rage', '_pen_nib_used']:
         player.pop(key, None)
 
     return player, logs

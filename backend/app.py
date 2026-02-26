@@ -416,7 +416,7 @@ def rest():
     player = state['player']
 
     if action == 'heal':
-        heal_amount = max(15, player['max_hp'] // 3)
+        heal_amount = max(10, player['max_hp'] // 4)
         player['hp'] = min(player['max_hp'], player['hp'] + heal_amount)
         state['message'] = f'🔥 休息恢复了 {heal_amount} 点HP！'
 

@@ -12,21 +12,21 @@ from .enemies import create_enemy
 
 CHARACTER_STATS = {
     'warrior': {
-        'max_hp': 95, 'gold': 99, 'name': '战士', 'icon': '⚔️',
+        'max_hp': 95, 'gold': 25, 'name': '战士', 'icon': '⚔️',
         'description': '铁壁战士，HP最高，防御极强，每回合获得5点被动护甲，攻击偏弱',
         'max_energy': 3, 'base_block': 5,
         'char_attack_bonus': -1,   # 攻击卡每次命中 -1 伤害
         'char_defense_bonus': 4,   # 格挡卡每次使用 +4 格挡
     },
     'mage': {
-        'max_hp': 52, 'gold': 99, 'name': '法师', 'icon': '🔮',
+        'max_hp': 52, 'gold': 25, 'name': '法师', 'icon': '🔮',
         'description': '能量法师，HP最低，4点能量，攻击法术威力极强，防御薄弱',
         'max_energy': 4, 'base_block': 0,
         'char_attack_bonus': 3,    # 攻击卡每次命中 +3 伤害
         'char_defense_bonus': -1,  # 格挡卡每次使用 -1 格挡
     },
     'assassin': {
-        'max_hp': 70, 'gold': 99, 'name': '刺客', 'icon': '🗡️',
+        'max_hp': 70, 'gold': 25, 'name': '刺客', 'icon': '🗡️',
         'description': '暗影刺客，攻击力强，擅长连击爆发，防御一般',
         'max_energy': 3, 'base_block': 0,
         'char_attack_bonus': 2,    # 攻击卡每次命中 +2 伤害
