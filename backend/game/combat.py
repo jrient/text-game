@@ -129,6 +129,16 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
             player.setdefault('exhaust_pile', []).append(c)
         player['hand'] = []
         logs.append(f'🔥 恶魔烈焰：耗尽 {len(hand_cards)} 张手牌')
+    elif pre_id == 'a_flechettes':
+        # 飞镖：每有1张技能牌在手中造成4点伤害
+        card = dict(card)
+        skill_in_hand = sum(1 for c in player.get('hand', []) if c.get('type') == 'skill')
+        card['hits'] = max(0, skill_in_hand) if skill_in_hand > 0 else 1
+        if skill_in_hand == 0:
+            card['damage'] = 0
+            logs.append('❌ 飞镖：手中没有技能牌，无效！')
+        else:
+            logs.append(f'🎯 飞镖：手中{skill_in_hand}张技能牌，造成{4*skill_in_hand}点伤害')
     elif pre_id == 'a_sneaky_strike':
         # 暗袭：本回合必须弃过牌
         if not player.get('_discarded_this_turn'):
@@ -170,6 +180,9 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
             actual_dmg, target_enemy = deal_damage(dmg, card.get('hits', 1), target_enemy, logs)
             player['damage_dealt'] = player.get('damage_dealt', 0) + actual_dmg
             logs.append(f"对 {target_enemy['name']} 造成 {actual_dmg} 点伤害")
+            # 反弹：将自身置于抽牌堆顶
+            if card.get('id') == 'm_rebound':
+                player['_rebound_active'] = True
 
     _aoe_total = 0
     if card.get('damage', 0) > 0 and card.get('apply_to_all'):
@@ -353,6 +366,11 @@ def calculate_block(base_block: int, player: dict) -> int:
 
 def deal_damage(damage: int, hits: int, enemy: dict, logs: List[str]) -> Tuple[int, dict]:
     """对敌人造成伤害，处理格挡"""
+    # 腐化之心：前4回合无敌（move_history < 4时不受伤害）
+    if 'corrupt_heart' in enemy.get('id', '') and len(enemy.get('move_history', [])) < 4:
+        logs.append('🛡️ 腐化之心：调试模式，无法被伤害！')
+        return 0, enemy
+
     total_dmg = 0
     for _ in range(hits):
         if damage <= 0:
@@ -391,6 +409,15 @@ def deal_damage_to_player(damage: int, player: dict, logs: List[str]) -> Tuple[d
         player['hp'] = max(0, player['hp'] - actual_dmg)
         logs.append(f"你受到 {actual_dmg} 点伤害")
 
+    # 蜥蜴尾巴：第一次致死伤害时以10%HP存活
+    if player['hp'] <= 0:
+        relics = player.get('relics', [])
+        if any(r['id'] == 'lizard_tail' for r in relics) and not player.get('_lizard_tail_used'):
+            player['hp'] = max(1, player['max_hp'] // 10)
+            player['_lizard_tail_used'] = True
+            actual_dmg = max(0, actual_dmg - player['max_hp'] // 10)
+            logs.append('🦎 遗物【蜥蜴尾巴】：死里逃生！以10%HP存活！')
+
     return player, actual_dmg
 
 
@@ -404,6 +431,12 @@ def draw_cards(player: dict, count: int) -> int:
                 player['draw_pile'] = player['discard_pile'][:]
                 random.shuffle(player['draw_pile'])
                 player['discard_pile'] = []
+                # 日晷：每洗牌3次获得2点能量
+                player['_sundial_count'] = player.get('_sundial_count', 0) + 1
+                if player['_sundial_count'] % 3 == 0:
+                    player['energy'] = player.get('energy', 0) + 2
+                    # Can't append to logs here easily, but track it
+                    player['_sundial_triggered'] = True
             else:
                 break
         if player['draw_pile']:
@@ -750,6 +783,10 @@ def start_player_turn(player: dict, enemies: List[dict] = None) -> Tuple[dict, L
     player['_puzzle_triggered'] = False  # 百年谜题每回合重置
     player['_echo_used'] = False         # 回声形态每回合重置
     player['_discarded_this_turn'] = False  # 暗袭条件重置
+
+    # 日晷触发提示（在回合开始时提示上一次洗牌触发）
+    if player.pop('_sundial_triggered', False):
+        logs.insert(0, '⏰ 遗物【日晷】：洗牌3次，能量+2')
 
     # 冰淇淋遗物：保留上回合未用能量
     saved_energy = player.pop('_saved_energy', 0)

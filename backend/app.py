@@ -231,9 +231,13 @@ def play_card():
     # 统计
     player['cards_played'] = player.get('cards_played', 0) + 1
 
-    # 从手牌移除（exhaust -> exhaust_pile, 否则 -> discard_pile）
+    # 从手牌移除（exhaust -> exhaust_pile, 反弹->抽牌堆顶, 否则 -> discard_pile）
     hand.pop(card_index)
-    if card.get('exhaust'):
+    if player.pop('_rebound_active', False):
+        # 反弹：将牌放回抽牌堆顶
+        player['draw_pile'] = player.get('draw_pile', []) + [card]
+        logs.append(f'🔄 反弹：【{card["name"]}】回到抽牌堆顶')
+    elif card.get('exhaust'):
         player['exhaust_pile'] = player.get('exhaust_pile', []) + [card]
     else:
         player['discard_pile'].append(card)

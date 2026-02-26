@@ -104,6 +104,17 @@ def on_turn_start(player: dict, enemies: list, turn: int) -> Tuple[dict, list, L
                 e['hp'] = max(0, e['hp'] - 3)
         logs.append('⏳ 遗物【汞沙漏】：对所有敌人造成3点伤害')
 
+    # 白兽雕像：每回合开始回血2点
+    if 'white_beast_statue' in relic_ids:
+        player['hp'] = min(player['max_hp'], player['hp'] + 2)
+        logs.append('🗿 遗物【白兽雕像】：恢复2点HP')
+
+    # 兵法：上回合未出攻击牌，本回合+1能量
+    if 'art_of_war' in relic_ids and player.get('_art_of_war_ready'):
+        player['energy'] = player.get('energy', 0) + 1
+        player['_art_of_war_ready'] = False
+        logs.append('📜 遗物【兵法】：上回合未出攻击牌，能量+1')
+
     return player, enemies, logs
 
 
@@ -136,6 +147,14 @@ def on_turn_end(player: dict, enemies: list) -> Tuple[dict, list, List[str]]:
                 logs[-1] = '🧊 遗物【冰封核心】：法球槽为空，获得 ❄️冰霜 法球'
 
     # 叮钹：每次丢弃牌时伤害（在这里处理弃牌时的效果）
+
+    # 兵法：若本回合未出攻击牌，下回合+1能量
+    if 'art_of_war' in relic_ids:
+        if player.get('_attacks_this_turn', 0) == 0:
+            player['_art_of_war_ready'] = True
+        else:
+            player['_art_of_war_ready'] = False
+
     return player, enemies, logs
 
 
@@ -267,7 +286,7 @@ def on_combat_end(player: dict, is_victory: bool) -> Tuple[dict, List[str]]:
 
     # 清理战斗临时状态
     for key in ['_lantern_used', '_horn_cleat_active', '_calipers_block', '_flower_count',
-                '_nob_rage', '_pen_nib_used']:
+                '_nob_rage', '_pen_nib_used', '_art_of_war_ready', '_lizard_tail_used']:
         player.pop(key, None)
 
     return player, logs

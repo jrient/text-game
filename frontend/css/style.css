@@ -553,6 +553,9 @@ body {
 .status-badge.poison { color: #9a44b0; border-color: rgba(154,68,176,0.3); }
 .status-badge.weak { color: #d08030; border-color: rgba(208,128,48,0.3); }
 .status-badge.vulnerable { color: #d0a020; border-color: rgba(208,160,32,0.3); }
+.status-badge.echo-form { color: #c080ff; border-color: rgba(192,128,255,0.3); }
+.status-badge.art-of-war { color: #ff8040; border-color: rgba(255,128,64,0.3); }
+.status-badge.sundial { color: #80d0ff; border-color: rgba(128,208,255,0.3); }
 
 .block-display {
   display: flex;

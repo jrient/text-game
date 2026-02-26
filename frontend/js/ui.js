@@ -230,6 +230,9 @@ const UI = {
       player.dexterity > 0 ? `<span class="status-badge dexterity">🤸 ${player.dexterity}</span>` : '',
       player.weak_turns > 0 ? `<span class="status-badge weak">💔 弱${player.weak_turns}</span>` : '',
       player.vulnerable_turns > 0 ? `<span class="status-badge vulnerable">⬇️ 易伤${player.vulnerable_turns}</span>` : '',
+      player._echo_form ? `<span class="status-badge echo-form" title="回声形态：每回合第一张非能力牌打出两次">🔮 回声${player._echo_used ? '(已用)' : ''}</span>` : '',
+      player._art_of_war_ready ? `<span class="status-badge art-of-war" title="战争艺术：本回合+1能量（上回合未出牌）">⚔️ 战术</span>` : '',
+      player._sundial_triggered ? `<span class="status-badge sundial" title="日晷：洗牌3次获得+2能量">🕐 日晷</span>` : '',
     ].filter(Boolean).join('');
 
     // 法球显示（仅法师有法球时显示）

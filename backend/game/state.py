@@ -331,6 +331,45 @@ def select_boss_relic(game_state: Dict, relic_id: str) -> Dict:
     if relic:
         player['relics'].append(relic.to_dict())
 
+    # ---- Boss遗物特殊效果 ----
+    if relic_id == 'astrolabe':
+        # 星盘：随机升级牌组中3张未升级的牌
+        import re as _re
+        deck = player.get('deck', [])
+        upgradeable = [c for c in deck if not c.get('upgraded')]
+        chosen = random.sample(upgradeable, min(3, len(upgradeable)))
+        for card in chosen:
+            card['upgraded'] = True
+            card['name'] = card['name'] + '+'
+            if card.get('damage'): card['damage'] = int(card['damage'] * 1.3) + 2
+            if card.get('block'):  card['block']  = int(card['block']  * 1.3) + 2
+            if card.get('cost', 1) > 0: card['cost'] = max(0, card['cost'] - 1)
+            desc = card.get('description', '')
+            if card.get('damage', 0) > 0 and '伤害' in desc:
+                desc = _re.sub(r'\d+(?=点伤害)', str(card['damage']), desc, count=1)
+            if card.get('block', 0) > 0 and '格挡' in desc:
+                desc = _re.sub(r'\d+(?=点格挡)', str(card['block']), desc, count=1)
+            card['description'] = desc
+        game_state['message'] = f'⭐ 星盘：升级了 {len(chosen)} 张牌！'
+
+    elif relic_id == 'pandoras_box':
+        # 潘多拉魔盒：将所有起始攻击/防御牌替换为随机牌
+        from .cards import get_card_rewards
+        character = player.get('character', 'warrior')
+        deck = player.get('deck', [])
+        starter_ids = {'w_strike', 'w_defend', 'm_zap', 'm_defend', 'a_strike', 'a_defend'}
+        non_starter = [c for c in deck if c.get('id') not in starter_ids]
+        starter_count = len(deck) - len(non_starter)
+        if starter_count > 0:
+            replacements = get_card_rewards(character, player.get('floor', 1), starter_count)
+            player['deck'] = non_starter + replacements
+            game_state['message'] = f'📦 潘多拉魔盒：{starter_count}张起始牌被替换！'
+
+    elif relic_id == 'black_blood':
+        # 黑血：直接替换燃烧之血（移除旧遗物）
+        player['relics'] = [r for r in player['relics'] if r['id'] != 'burning_blood']
+        player['relics'] = [r for r in player['relics'] if r['id'] != 'black_blood'] + [relic.to_dict() if relic else {'id':'black_blood','name':'黑血','description':'战斗结束恢复12HP','rarity':'boss'}]
+
     # 生成下一幕地图
     next_act = game_state.get('next_act', 2)
     game_state['map'] = generate_map(next_act)
