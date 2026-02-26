@@ -100,6 +100,10 @@
           <div class="energy-nums"><span id="combat-energy">3</span><span>/</span><span id="combat-max-energy">3</span></div>
           <div class="energy-label">能量</div>
         </div>
+        <div class="orbs-display" id="combat-orbs" style="display:none">
+          <div class="orbs-label">法球</div>
+          <div class="orbs-list" id="orbs-list"></div>
+        </div>
         <div class="combat-actions">
           <div class="potions-bar" id="potions-bar"></div>
           <button class="btn btn-danger" onclick="Game.endTurn()">结束回合 [E]</button>
@@ -257,6 +261,12 @@
 
     <!-- 卡牌详情tooltip -->
     <div id="card-tooltip" class="card-tooltip hidden"></div>
+
+    <!-- 遗物说明tooltip -->
+    <div id="relic-tooltip" class="relic-tooltip" style="display:none">
+      <div class="relic-tip-name"></div>
+      <div class="relic-tip-desc"></div>
+    </div>
 
     <!-- 通知 -->
     <div id="notification" class="notification hidden"></div>

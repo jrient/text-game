@@ -5,6 +5,72 @@ from .cards import ALL_CARDS, Card
 from .enemies import Enemy, EnemyIntent, create_enemy_from_dict
 
 
+def channel_orb(player: dict, orb_type: str, logs: List[str]) -> dict:
+    """将法球加入法球槽，若满了则先激活最旧的"""
+    orb_slots = player.get('orb_slots', 3)
+    orbs = player.get('orbs', [])
+    if len(orbs) >= orb_slots:
+        # 激活最旧的法球（溢出激活）
+        _evoke_single_orb(player, orbs[0], logs, [])
+        orbs.pop(0)
+    orbs.append(orb_type)
+    player['orbs'] = orbs
+    orb_names = {'lightning': '⚡闪电', 'frost': '❄️冰霜', 'plasma': '🔵等离子体'}
+    logs.append(f'获得 {orb_names.get(orb_type, orb_type)} 法球（共 {len(orbs)} 个）')
+    return player
+
+
+def evoke_orb(player: dict, enemies: List[dict], logs: List[str], times: int = 1) -> Tuple[dict, List[dict]]:
+    """激活最旧的法球 times 次"""
+    for _ in range(times):
+        orbs = player.get('orbs', [])
+        if not orbs:
+            logs.append('（无法球可激活）')
+            break
+        orb_type = orbs[0]
+        _evoke_single_orb(player, orb_type, logs, enemies)
+        orbs.pop(0)
+        player['orbs'] = orbs
+    return player, enemies
+
+
+def _evoke_single_orb(player: dict, orb_type: str, logs: List[str], enemies: List[dict]) -> None:
+    """执行单个法球的激活效果（就地修改）"""
+    if orb_type == 'lightning':
+        alive = [e for e in enemies if e.get('hp', 0) > 0]
+        if alive:
+            target = random.choice(alive)
+            target['hp'] = max(0, target['hp'] - 8)
+            logs.append(f'⚡ 闪电法球激活：对 {target["name"]} 造成8点伤害')
+        else:
+            logs.append('⚡ 闪电法球激活：无目标')
+    elif orb_type == 'frost':
+        block_gain = calculate_block(5, player)
+        player['block'] = player.get('block', 0) + block_gain
+        logs.append(f'❄️ 冰霜法球激活：获得 {block_gain} 点格挡')
+    elif orb_type == 'plasma':
+        player['energy'] = player.get('energy', 0) + 2
+        logs.append('🔵 等离子体法球激活：能量+2')
+
+
+def trigger_orb_passives(player: dict, enemies: List[dict], logs: List[str]) -> Tuple[dict, List[dict]]:
+    """触发所有法球的被动效果（每回合开始）"""
+    for orb_type in player.get('orbs', []):
+        if orb_type == 'lightning':
+            alive = [e for e in enemies if e.get('hp', 0) > 0]
+            if alive:
+                target = random.choice(alive)
+                target['hp'] = max(0, target['hp'] - 3)
+                logs.append(f'⚡ 闪电法球：对 {target["name"]} 造成3点伤害')
+        elif orb_type == 'frost':
+            player['block'] = player.get('block', 0) + 2
+            logs.append('❄️ 冰霜法球：获得2点格挡')
+        elif orb_type == 'plasma':
+            player['energy'] = player.get('energy', 0) + 1
+            logs.append('🔵 等离子体法球：能量+1')
+    return player, enemies
+
+
 def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
                        target_idx: int = 0) -> Tuple[dict, List[dict], List[str]]:
     """
@@ -13,6 +79,21 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
     """
     logs = []
     card = card_data
+
+    # 法球动态卡牌：在计算前调整数值
+    card_id_pre = card.get('id', '')
+    if card_id_pre == 'm_compile_driver':
+        card = dict(card)
+        card['damage'] = 3 + len(player.get('orbs', []))
+    elif card_id_pre == 'm_thunder_strike':
+        lightning_count = sum(1 for o in player.get('orbs', []) if o == 'lightning')
+        card = dict(card)
+        if lightning_count == 0:
+            card['damage'] = 0
+            card['hits'] = 0
+            logs.append('⚡ 雷击：没有闪电法球，无效！')
+        else:
+            card['hits'] = lightning_count
 
     # 消耗能量
     cost = card.get('cost', 0)
@@ -150,6 +231,21 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
             player.setdefault('hand', []).append(zc)
         if zero_cards:
             logs.append(f'全力一击：{len(zero_cards)}张0费牌回到手牌')
+
+    # ---- 法球系统 ----
+    card_id_orb = card.get('id', '')
+    if card_id_orb == 'm_dualcast':
+        player, enemies = evoke_orb(player, enemies, logs, times=2)
+    elif card_id_orb == 'm_cold_snap':
+        player = channel_orb(player, 'frost', logs)
+    elif card_id_orb == 'm_ball_lightning':
+        player = channel_orb(player, 'lightning', logs)
+    elif card_id_orb == 'm_capacitor':
+        for _ in range(3):
+            player = channel_orb(player, 'lightning', logs)
+    elif card_id_orb == 'm_meteor_strike':
+        for _ in range(3):
+            player = channel_orb(player, 'plasma', logs)
 
     # 处理exhaust
     if card.get('exhaust'):
@@ -572,6 +668,10 @@ def start_player_turn(player: dict, enemies: List[dict] = None) -> Tuple[dict, L
     hand_size = 5 + player.get('bonus_draw', 0)
     drawn = draw_cards(player, hand_size)
     logs.append(f"回合开始：恢复 {player['energy']} 点能量，抽取 {drawn} 张牌")
+
+    # 法球被动效果（每回合触发）
+    if player.get('orbs'):
+        player, enemies = trigger_orb_passives(player, enemies, logs)
 
     # 减少虚弱/易伤回合（玩家的）
     if player.get('weak_turns', 0) > 0:

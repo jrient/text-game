@@ -389,6 +389,51 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.orbs-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 44px;
+}
+.orbs-label {
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.orbs-list { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+.orb-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 0 4px currentColor);
+  cursor: help;
+}
+.orb-lightning { color: #ffe066; }
+.orb-frost     { color: #88eeff; }
+.orb-plasma    { color: #aa88ff; }
+
+.relic-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(15, 8, 3, 0.97);
+  border: 1px solid var(--accent-gold);
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-width: 200px;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.7);
+}
+.relic-tip-name {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+.relic-tip-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
 
 /* ===== 地图 ===== */
 #screen-map { overflow-y: auto; }

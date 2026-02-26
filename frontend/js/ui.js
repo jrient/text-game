@@ -40,8 +40,34 @@ const UI = {
     const relicsEl = document.getElementById('header-relics');
     relicsEl.innerHTML = (player.relics || []).map(r => {
       const short = r.name.length > 4 ? r.name.slice(0, 4) + '…' : r.name;
-      return `<div class="relic-icon" title="${r.name}: ${r.description}">${short}</div>`;
+      return `<div class="relic-icon" data-name="${r.name}" data-desc="${r.description}">${short}</div>`;
     }).join('');
+    // 遗物悬浮说明（桌面hover + 移动端点击）
+    relicsEl.querySelectorAll('.relic-icon').forEach(el => {
+      const show = (x, y) => {
+        const tip = document.getElementById('relic-tooltip');
+        tip.querySelector('.relic-tip-name').textContent = el.dataset.name;
+        tip.querySelector('.relic-tip-desc').textContent = el.dataset.desc;
+        tip.style.display = 'block';
+        const rect = el.getBoundingClientRect();
+        tip.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+        tip.style.top = (rect.bottom + 6) + 'px';
+      };
+      el.addEventListener('mouseenter', show);
+      el.addEventListener('mouseleave', () => {
+        document.getElementById('relic-tooltip').style.display = 'none';
+      });
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tip = document.getElementById('relic-tooltip');
+        if (tip.style.display === 'block') {
+          tip.style.display = 'none';
+        } else {
+          show();
+          setTimeout(() => { tip.style.display = 'none'; }, 2500);
+        }
+      });
+    });
   },
 
   // ===== 地图渲染 =====
@@ -205,6 +231,21 @@ const UI = {
       player.weak_turns > 0 ? `<span class="status-badge weak">💔 弱${player.weak_turns}</span>` : '',
       player.vulnerable_turns > 0 ? `<span class="status-badge vulnerable">⬇️ 易伤${player.vulnerable_turns}</span>` : '',
     ].filter(Boolean).join('');
+
+    // 法球显示（仅法师有法球时显示）
+    const orbsArea = document.getElementById('combat-orbs');
+    const orbsList = document.getElementById('orbs-list');
+    const orbs = player.orbs || [];
+    if (orbs.length > 0) {
+      const orbIcons = { lightning: '⚡', frost: '❄️', plasma: '🔵' };
+      const orbTips = { lightning: '闪电：被动3伤/激活8伤', frost: '冰霜：被动2格挡/激活5格挡', plasma: '等离子：被动1能量/激活2能量' };
+      orbsList.innerHTML = orbs.map(o =>
+        `<span class="orb-icon orb-${o}" title="${orbTips[o] || o}">${orbIcons[o] || '🔮'}</span>`
+      ).join('');
+      orbsArea.style.display = '';
+    } else {
+      orbsArea.style.display = 'none';
+    }
   },
 
   renderHand(hand, energy, onPlay) {

@@ -1,4 +1,5 @@
 """游戏状态管理 - V3: 天赋难度系统 + 完整遗物集成"""
+import copy
 import random
 import uuid
 from typing import Dict, List, Optional
@@ -151,13 +152,17 @@ def init_combat(game_state: Dict, node_type: str, floor: int) -> Dict:
     player['block'] = 0
     player['_combat_turn'] = 1
 
-    # 重置手牌（将所有牌放回抽牌堆）
-    all_cards = player['hand'] + player['discard_pile'] + player['draw_pile']
+    # 重置手牌：从 deck（权威牌组）重建抽牌堆，确保升级效果生效
+    all_cards = copy.deepcopy(player['deck'])
     random.shuffle(all_cards)
     player['hand'] = []
     player['discard_pile'] = []
     player['draw_pile'] = all_cards
     player['exhaust_pile'] = []
+
+    # 重置法球槽
+    player['orbs'] = []
+    player['orb_slots'] = player.get('orb_slots', 3)
 
     # 创建敌人
     enemies = []

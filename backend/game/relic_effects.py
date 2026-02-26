@@ -61,6 +61,13 @@ def on_combat_start(player: dict, enemies: list) -> Tuple[dict, list, List[str]]
     if 'pen_nib' in relic_ids:
         player['_pen_nib_used'] = False
 
+    # 破裂核心：战斗开始获得1个闪电法球
+    if 'cracked_core' in relic_ids:
+        from .combat import channel_orb
+        player = channel_orb(player, 'lightning', logs)
+        if logs and '获得' in logs[-1]:
+            logs[-1] = '💎 遗物【破裂核心】：获得 ⚡闪电 法球'
+
     return player, enemies, logs
 
 
@@ -119,6 +126,14 @@ def on_turn_end(player: dict, enemies: list) -> Tuple[dict, list, List[str]]:
             logs.append(f'🍦 遗物【冰淇淋】：保留{player["energy"]}点能量')
 
 
+
+    # 冰封核心：若回合结束时法球槽为空，获得一个冰霜法球
+    if 'frozen_core' in relic_ids:
+        if not player.get('orbs'):
+            from .combat import channel_orb
+            player = channel_orb(player, 'frost', logs)
+            if logs and '获得' in logs[-1]:
+                logs[-1] = '🧊 遗物【冰封核心】：法球槽为空，获得 ❄️冰霜 法球'
 
     # 叮钹：每次丢弃牌时伤害（在这里处理弃牌时的效果）
     return player, enemies, logs
