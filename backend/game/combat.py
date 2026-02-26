@@ -114,6 +114,31 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
     # 获取目标
     target_enemy = enemies[target_idx] if enemies and target_idx < len(enemies) else None
 
+    # ---- 动态卡牌数值覆盖（在伤害计算前）----
+    pre_id = card.get('id', '')
+    if pre_id == 'm_stack':
+        # 叠加：格挡值 = 弃牌堆数量
+        card = dict(card)
+        card['block'] = len(player.get('discard_pile', []))
+    elif pre_id == 'w_fiend_fire':
+        # 恶魔烈焰：耗尽全部手牌，每张7点伤害
+        hand_cards = list(player.get('hand', []))
+        card = dict(card)
+        card['hits'] = max(1, len(hand_cards))
+        for c in hand_cards:
+            player.setdefault('exhaust_pile', []).append(c)
+        player['hand'] = []
+        logs.append(f'🔥 恶魔烈焰：耗尽 {len(hand_cards)} 张手牌')
+    elif pre_id == 'a_sneaky_strike':
+        # 暗袭：本回合必须弃过牌
+        if not player.get('_discarded_this_turn'):
+            logs.append('❌ 暗袭：本回合未丢弃过牌，无效！')
+            card = dict(card); card['damage'] = 0
+        else:
+            # 额外获得2点能量
+            player['energy'] = player.get('energy', 0) + 2
+            logs.append('暗袭：条件满足，额外获得2点能量')
+
     # ---- 攻击效果 ----
     if card.get('damage', 0) > 0 and not card.get('apply_to_all'):
         card_id = card.get('id', '')
@@ -146,14 +171,20 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
             player['damage_dealt'] = player.get('damage_dealt', 0) + actual_dmg
             logs.append(f"对 {target_enemy['name']} 造成 {actual_dmg} 点伤害")
 
+    _aoe_total = 0
     if card.get('damage', 0) > 0 and card.get('apply_to_all'):
-        total = 0
         for i, enemy in enumerate(enemies):
             dmg = calculate_damage(card['damage'], card.get('hits', 1), player, enemy)
             actual_dmg, enemies[i] = deal_damage(dmg, card.get('hits', 1), enemy, logs)
-            total += actual_dmg
-        player['damage_dealt'] = player.get('damage_dealt', 0) + total
-        logs.append(f"对所有敌人共造成 {total} 点伤害")
+            _aoe_total += actual_dmg
+        player['damage_dealt'] = player.get('damage_dealt', 0) + _aoe_total
+        logs.append(f"对所有敌人共造成 {_aoe_total} 点伤害")
+
+    # 死亡镰刀：恢复等同伤害的HP
+    if card.get('id') == 'w_reaper' and _aoe_total > 0:
+        heal = _aoe_total
+        player['hp'] = min(player['max_hp'], player['hp'] + heal)
+        logs.append(f'💀 死亡镰刀：恢复 {heal} 点HP')
 
     # ---- 特殊卡牌：重拳（伤害=当前格挡值）----
     if card.get('id') == 'w_body_slam' and target_enemy:
@@ -208,6 +239,13 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
         if card.get('dexterity_gain', 0) > 0:
             player['dexterity'] = player.get('dexterity', 0) + card['dexterity_gain']
             logs.append(f"永久敏捷 +{card['dexterity_gain']}")
+        # 回声形态：标记激活
+        if card.get('id') == 'm_echo_form':
+            player['_echo_form'] = True
+            logs.append('🔮 回声形态：本回合起，每回合第一张牌触发2次')
+        # 偏向认知：记录激活（每回合专注-1需在turn_start处理）
+        elif card.get('id') == 'm_biased_cognition':
+            player['_biased_cognition'] = True
 
     # ---- 特殊卡牌：打出后副作用 ----
     card_id_post = card.get('id', '')
@@ -223,6 +261,16 @@ def apply_card_effect(card_data: dict, player: dict, enemies: List[dict],
         wound = dict(ALL_CARDS['curse_wound'].to_dict())
         player.setdefault('discard_pile', []).append(wound)
         logs.append('狂野打击：创伤加入弃牌堆')
+    # 燃烧牺牲：将一张灼伤加入弃牌堆
+    elif card_id_post == 'w_immolate':
+        from .cards import ALL_CARDS
+        burn = dict(ALL_CARDS['curse_burn'].to_dict()) if 'curse_burn' in ALL_CARDS else {
+            'id': 'curse_burn', 'name': '灼伤', 'type': 'curse', 'cost': 1,
+            'description': '回合结束时失去1HP，不可打出。', 'unplayable': True,
+            'damage': 0, 'block': 0, 'rarity': 'curse', 'exhaust': False
+        }
+        player.setdefault('discard_pile', []).append(burn)
+        logs.append('🔥 燃烧牺牲：一张灼伤加入弃牌堆')
     # 全力一击：将弃牌堆中所有0费牌拿回手牌
     elif card_id_post == 'm_all_for_one':
         zero_cards = [c for c in player.get('discard_pile', []) if c.get('cost', -1) == 0]
@@ -437,6 +485,11 @@ def enemy_turn(player: dict, enemies: List[dict]) -> Tuple[dict, List[dict], Lis
             elif 'gremlin_nob' in eid_buff and '愤怒' in desc_buff:
                 player['_nob_rage'] = True
                 logs.append(f"😡 哥布林领袖愤怒：打出技能牌时额外受到6点伤害！")
+            # 腐化之心：回血100HP
+            elif 'corrupt' in eid_buff and '回血' in desc_buff:
+                heal_amount = min(100, enemy['max_hp'] - enemy['hp'])
+                enemy['hp'] = min(enemy['max_hp'], enemy['hp'] + 100)
+                logs.append(f'💗 腐化之心恢复了 {heal_amount} 点HP！')
             else:
                 if value > 0:
                     enemy['strength'] = enemy.get('strength', 0) + value
@@ -459,8 +512,17 @@ def enemy_turn(player: dict, enemies: List[dict]) -> Tuple[dict, List[dict], Lis
             eid = enemy.get('id', '')
             desc = intent.get('description', '特殊行动')
             logs.append(f"{enemy['name']}：{desc}")
+            # 腐化之心：诅咒——加入10张创伤牌
+            if 'corrupt' in eid and '诅咒' in desc:
+                from .cards import ALL_CARDS
+                wound = ALL_CARDS.get('curse_wound')
+                if wound:
+                    wound_dict = wound.to_dict()
+                    for _ in range(10):
+                        player.setdefault('discard_pile', []).append(dict(wound_dict))
+                    logs.append('💀 诅咒：10张创伤牌加入你的弃牌堆！（你的牌组被污染了）')
             # 六角幽灵：召唤将灼伤牌加入弃牌堆
-            if 'hexa' in eid:
+            elif 'hexa' in eid:
                 from .cards import ALL_CARDS
                 burn_card = dict(ALL_CARDS.get('curse_burn', ALL_CARDS.get('curse_wound', next(iter(ALL_CARDS.values())))).to_dict())
                 for _ in range(3):
@@ -686,6 +748,8 @@ def start_player_turn(player: dict, enemies: List[dict] = None) -> Tuple[dict, L
     player['_attacks_this_turn'] = 0
     player['_skills_this_turn'] = 0
     player['_puzzle_triggered'] = False  # 百年谜题每回合重置
+    player['_echo_used'] = False         # 回声形态每回合重置
+    player['_discarded_this_turn'] = False  # 暗袭条件重置
 
     # 冰淇淋遗物：保留上回合未用能量
     saved_energy = player.pop('_saved_energy', 0)

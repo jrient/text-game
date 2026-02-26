@@ -220,6 +220,14 @@ def play_card():
     from game.combat import apply_card_effect, check_combat_end
     player, alive_enemies, logs = apply_card_effect(card, player, alive_enemies, target_index)
 
+    # 回声形态：第一张非能力牌触发2次
+    if (player.get('_echo_form') and not player.get('_echo_used')
+            and card.get('type') != 'power' and card.get('id') != 'm_echo_form'):
+        player['_echo_used'] = True
+        _, alive_enemies, echo_logs = apply_card_effect(card, player, alive_enemies, target_index)
+        logs.append('🔮 回声形态：再次触发！')
+        logs.extend(echo_logs)
+
     # 统计
     player['cards_played'] = player.get('cards_played', 0) + 1
 
